@@ -1,0 +1,597 @@
+
+
+//   const handleSave = async () => {
+//   try {
+//     const values = await form.validateFields();
+
+//     const formatDate = (date) => (date ? dayjs(date).format("YYYY-MM-DD") : null);
+//     const normalize = (val) =>
+//       val === null || val === undefined || val === "" ? null : String(val).trim();
+
+//     const { id } = useParams(); // 📌 Read URL param
+//     const isEditMode = id && id !== null && id !== undefined && id !== ""; // TRUE only on edit
+//     const employeeId = id; // ID only for update
+
+//     const formData = new FormData();
+
+//     // 📌 ONLY FOR UPDATE
+//     if (isEditMode) {
+//       formData.append("employee_id", employeeId);
+//       formData.append("id", employeeId);
+//       formData.append("employee_code", normalize(values.employeeId) || "");
+//     }
+
+//     // ==========================
+//     // 📌 DETAILS PAYLOAD
+//     // ==========================
+//     const details = {
+//       employee_code: normalize(values.employeeId) || "",
+//       attendance_id: normalize(values.attendanceId),
+//       first_name: normalize(values.firstName),
+//       last_name: normalize(values.lastName),
+//       reporting_manager: normalize(values.reportingManager),
+//       employee_type: normalize(values.employeeType),
+//       status: normalize(values.status),
+//       shift_type: normalize(values.shiftType),
+//       department_id: normalize(values.department),
+//       designation_id: normalize(values.designation),
+//       branch_id: normalize(values.branch_id),
+//       joining_date: formatDate(values.joiningDate),
+//       dob: formatDate(values.dob),
+//       gender:
+//         values.gender === "male"
+//           ? "Male"
+//           : values.gender === "female"
+//           ? "Female"
+//           : "Other",
+//       marital_status: values.maritalStatus === "single" ? "UnMarried" : "Married",
+//       blood_group: normalize(values.bloodGroup),
+//       nationality: normalize(values.nationality),
+//       permanent_address: normalize(values.permanentAddress),
+//       current_address: normalize(values.currentAddress),
+//       city: normalize(values.city),
+//       state: normalize(values.state),
+//       zip_code: normalize(values.pinCode),
+//       email: normalize(values.email),
+//       mobile_number: normalize(values.mobileNumber),
+//       aadhar_number: normalize(values.aadhaar),
+//       pan_number: normalize(values.panNumber),
+//       pf_number: normalize(values.pf),
+//       tax_no: normalize(values.tax),
+//       bank_name: normalize(values.bankName),
+//       bank_account_number: normalize(values.account_no),
+//       ifsc_code: (values.ifsc_code || "").toUpperCase().trim(),
+//       branch_name: normalize(values.branchName),
+//       qualification: normalize(values.qualification),
+//       specialization: normalize(values.specialization),
+//       institution_name: normalize(values.institution),
+//       university_name: normalize(values.university),
+//       edu_start_date: formatDate(values.educationStartDate),
+//       edu_end_date: formatDate(values.educationEndDate),
+//       percentage: values.percentage,
+//       certifications: normalize(values.additionalCourses),
+//       company_name: normalize(values.companyName),
+//       previous_designation: normalize(values.expDesignation),
+//       previous_department: normalize(values.expDepartment),
+//       exp_start_date: formatDate(values.experienceStartDate),
+//       exp_end_date: formatDate(values.experienceEndDate),
+//       exp_location: normalize(values.location),
+//       responsibilities: normalize(values.achievements),
+//       basic_salary: Number(values.basicSalary) || 0,
+//       allowance: Number(values.allowanceType) || 0,
+//       bonus: Number(values["bonus/incentives"]) || 0,
+//       deductions: Number(values.deductions) || 0,
+//       net_salary: Number(values["net salary"]) || 0,
+//       asset_type: normalize(values.assetType),
+//       model: normalize(values.assetId),
+//       issued_date: formatDate(values.assetIssuedDate),
+//       return_date: formatDate(values.assetReturnDate),
+//     };
+
+//     // 📌 ADD THIS ONLY FOR UPDATE
+//     if (isEditMode) {
+//       details.employee_id = employeeId;
+//     }
+
+//     formData.append("details", JSON.stringify(details));
+
+//     // ==========================
+//     // 📌 EMERGENCY CONTACTS
+//     // ==========================
+//     const emergency = (values.emergencyContacts || []).map((c) => ({
+//       emergency_contact_name: normalize(c.contactName),
+//       emergency_contact_phone: normalize(c.phoneNumber),
+//       emergency_contact_relation: normalize(c.relationship),
+//       emergency_contact_address: normalize(c.address),
+//     }));
+//     formData.append("emergency", JSON.stringify(emergency));
+
+//     // ==========================
+//     // 📎 FILE UPLOADS
+//     // ==========================
+//     const appendFile = (key, field) => {
+//       const file = values[field]?.originFileObj || values[field];
+//       if (file instanceof File) formData.append(key, file);
+//     };
+
+//     appendFile("profile_picture", "profile_picture_file");
+//     appendFile("resume", "resumeUpload");
+//     appendFile("aadhar", "aadharUpload");
+//     appendFile("pan", "panUpload");
+//     appendFile("degree", "degreeUpload");
+//     appendFile("marksheet", "marksheetUpload");
+//     appendFile("relieving", "relievingUpload");
+//     appendFile("experience", "experienceUpload");
+//     appendFile("offer", "offerLetterUpload");
+//     appendFile("passport", "passportUpload");
+//     appendFile("driving", "drivingLicenseUpload");
+//     appendFile("addressproof", "addressProofUpload");
+//     appendFile("bankproof", "bankProofUpload");
+
+//     // ==========================
+//     // 🚀 MAKE REQUEST
+//     // ==========================
+//     if (!isEditMode) {
+//       await EmployeePersonalApi.add(formData); // 🟢 CREATE
+//       message.success("Employee added successfully!");
+//     } else {
+//       await EmployeePersonalApi.update(employeeId, formData); // 🟡 UPDATE
+//       message.success("Employee updated successfully!");
+//     }
+
+//     navigate("/employees");
+
+//   } catch (err) {
+//     console.error("Save error:", err);
+//     message.error(err.response?.data?.message || "Failed to save employee");
+//   }
+// };
+
+
+  // // ✅ FIXED SAVE HANDLER - Proper GET, POST, PUT
+  // const handleSave = async () => {
+  //   try {
+  //     const values = await form.validateFields();
+
+  //     const formatDate = (date) => (date ? dayjs(date).format("YYYY-MM-DD") : null);
+  //     const normalize = (val) =>
+  //       val === null || val === undefined || val === "" ? null : String(val).trim();
+
+  //     const isEditMode = !!id;
+  //     const employeeId = id; // MongoDB _id from URL
+
+  //     if (isEditMode && !employeeId) {
+  //       message.error("Employee ID is missing!");
+  //       return;
+  //     }
+
+  //     const formData = new FormData();
+
+  //     // ✅ CRITICAL: For UPDATE - Add these at root level
+  //     if (isEditMode) {
+  //       formData.append("employee_id", employeeId);
+  //       formData.append("id", employeeId);
+  //       formData.append("employee_code", normalize(values.employeeId) || "");
+  //     }
+
+  //     // Build details object
+  //     const details = {
+  //       employee_code: normalize(values.employeeId) || "",
+  //       attendance_id: normalize(values.attendanceId),
+  //       first_name: normalize(values.firstName),
+  //       last_name: normalize(values.lastName),
+  //       reporting_manager: normalize(values.reportingManager),
+  //       employee_type: normalize(values.employeeType),
+  //       status: normalize(values.status),
+  //       shift_type: normalize(values.shiftType),
+  //       department_id: normalize(values.department),
+  //       designation_id: normalize(values.designation),
+  //       branch_id: normalize(values.branch_id),
+  //       joining_date: formatDate(values.joiningDate),
+  //       dob: formatDate(values.dob),
+  //       gender:
+  //         values.gender === "male"
+  //           ? "Male"
+  //           : values.gender === "female"
+  //           ? "Female"
+  //           : "Other",
+  //       marital_status: values.maritalStatus === "single" ? "UnMarried" : "Married",
+  //       blood_group: normalize(values.bloodGroup),
+  //       nationality: normalize(values.nationality),
+  //       permanent_address: normalize(values.permanentAddress),
+  //       current_address: normalize(values.currentAddress),
+  //       city: normalize(values.city),
+  //       state: normalize(values.state),
+  //       zip_code: normalize(values.pinCode),
+  //       email: normalize(values.email),
+  //       mobile_number: normalize(values.mobileNumber),
+  //       aadhar_number: normalize(values.aadhaar),
+  //       pan_number: normalize(values.panNumber),
+  //       pf_number: normalize(values.pf),
+  //       tax_no: normalize(values.tax),
+  //       bank_name: normalize(values.bankName),
+  //       bank_account_number: normalize(values.account_no),
+  //       ifsc_code: (values.ifsc_code || "").toUpperCase().trim(),
+  //       branch_name: normalize(values.branchName),
+  //       qualification: normalize(values.qualification),
+  //       specialization: normalize(values.specialization),
+  //       institution_name: normalize(values.institution),
+  //       university_name: normalize(values.university),
+  //       edu_start_date: formatDate(values.educationStartDate),
+  //       edu_end_date: formatDate(values.educationEndDate),
+  //       percentage: values.percentage,
+  //       certifications: normalize(values.additionalCourses),
+  //       company_name: normalize(values.companyName),
+  //       previous_designation: normalize(values.expDesignation),
+  //       previous_department: normalize(values.expDepartment),
+  //       exp_start_date: formatDate(values.experienceStartDate),
+  //       exp_end_date: formatDate(values.experienceEndDate),
+  //       exp_location: normalize(values.location),
+  //       responsibilities: normalize(values.achievements),
+  //       basic_salary: Number(values.basicSalary) || 0,
+  //       allowance: Number(values.allowanceType) || 0,
+  //       bonus: Number(values["bonus/incentives"]) || 0,
+  //       deductions: Number(values.deductions) || 0,
+  //       net_salary: Number(values["net salary"]) || 0,
+  //       asset_type: normalize(values.assetType),
+  //       model: normalize(values.assetId),
+  //       issued_date: formatDate(values.assetIssuedDate),
+  //       return_date: formatDate(values.assetReturnDate),
+  //     };
+
+  //     // ✅ For UPDATE - Include employee_id in details too
+  //     if (isEditMode) {
+  //       details.employee_id = employeeId;
+  //     }
+
+  //     formData.append("details", JSON.stringify(details));
+
+  //     // Emergency contacts
+  //     const emergency = (values.emergencyContacts || []).map((c) => ({
+  //       emergency_contact_name: normalize(c.contactName),
+  //       emergency_contact_phone: normalize(c.phoneNumber),
+  //       emergency_contact_relation: normalize(c.relationship),
+  //       emergency_contact_address: normalize(c.address),
+  //     }));
+  //     formData.append("emergency", JSON.stringify(emergency));
+
+  //     // Files
+  //     const appendFile = (key, field) => {
+  //       const file = values[field]?.originFileObj || values[field];
+  //       if (file instanceof File) formData.append(key, file);
+  //     };
+
+  //     appendFile("profile_picture", "profile_picture_file");
+  //     appendFile("resume", "resumeUpload");
+  //     appendFile("aadhar", "aadharUpload");
+  //     appendFile("pan", "panUpload");
+  //     appendFile("degree", "degreeUpload");
+  //     appendFile("marksheet", "marksheetUpload");
+  //     appendFile("relieving", "relievingUpload");
+  //     appendFile("experience", "experienceUpload");
+  //     appendFile("offer", "offerLetterUpload");
+  //     appendFile("passport", "passportUpload");
+  //     appendFile("driving", "drivingLicenseUpload");
+  //     appendFile("addressproof", "addressProofUpload");
+  //     appendFile("bankproof", "bankProofUpload");
+
+  //     // API Call
+  //     if (isEditMode) {
+  //       await EmployeePersonalApi.update(employeeId, formData);
+  //       message.success("Employee updated successfully!");
+  //     } else {
+  //       await EmployeePersonalApi.add(formData);
+  //       message.success("Employee added successfully!");
+  //     }
+
+  //     navigate("/employees");
+  //   } catch (err) {
+  //     console.error("Save error:", err);
+  //     message.error(err.response?.data?.message || "Failed to save employee");
+  //   }
+  // };
+
+
+//   // ✅ FIXED SAVE HANDLER - Proper GET, POST, PUT + Extra Condition
+// const handleSave = async () => {
+//   try {
+//     const values = await form.validateFields();
+
+//     const formatDate = (date) => (date ? dayjs(date).format("YYYY-MM-DD") : null);
+//     const normalize = (val) =>
+//       val === null || val === undefined || val === "" ? null : String(val).trim();
+
+//     const isEditMode = !!id;
+//     const employeeId = id; // ID from URL (MongoDB)
+
+//     // 🛑 If employee_id missing in any case, stop
+//     if (!employeeId) {
+//       message.error("Employee ID is missing!");
+//       return null;
+//     }
+
+//     const formData = new FormData();
+
+//     // 📌 For UPDATE - Pass these in root formData
+//     if (isEditMode) {
+//       formData.append("employee_id", employeeId);
+//       formData.append("id", employeeId);
+//       formData.append("employee_code", normalize(values.employeeId) || "");
+//     }
+
+//     // BUILD DETAILS OBJECT
+//     const details = {
+//       employee_code: normalize(values.employeeId) || "",
+//       attendance_id: normalize(values.attendanceId),
+//       first_name: normalize(values.firstName),
+//       last_name: normalize(values.lastName),
+//       reporting_manager: normalize(values.reportingManager),
+//       employee_type: normalize(values.employeeType),
+//       status: normalize(values.status),
+//       shift_type: normalize(values.shiftType),
+//       department_id: normalize(values.department),
+//       designation_id: normalize(values.designation),
+//       branch_id: normalize(values.branch_id),
+//       joining_date: formatDate(values.joiningDate),
+//       dob: formatDate(values.dob),
+//       gender:
+//         values.gender === "male"
+//           ? "Male"
+//           : values.gender === "female"
+//           ? "Female"
+//           : "Other",
+//       marital_status: values.maritalStatus === "single" ? "UnMarried" : "Married",
+//       blood_group: normalize(values.bloodGroup),
+//       nationality: normalize(values.nationality),
+//       permanent_address: normalize(values.permanentAddress),
+//       current_address: normalize(values.currentAddress),
+//       city: normalize(values.city),
+//       state: normalize(values.state),
+//       zip_code: normalize(values.pinCode),
+//       email: normalize(values.email),
+//       mobile_number: normalize(values.mobileNumber),
+//       aadhar_number: normalize(values.aadhaar),
+//       pan_number: normalize(values.panNumber),
+//       pf_number: normalize(values.pf),
+//       tax_no: normalize(values.tax),
+//       bank_name: normalize(values.bankName),
+//       bank_account_number: normalize(values.account_no),
+//       ifsc_code: (values.ifsc_code || "").toUpperCase().trim(),
+//       branch_name: normalize(values.branchName),
+//       qualification: normalize(values.qualification),
+//       specialization: normalize(values.specialization),
+//       institution_name: normalize(values.institution),
+//       university_name: normalize(values.university),
+//       edu_start_date: formatDate(values.educationStartDate),
+//       edu_end_date: formatDate(values.educationEndDate),
+//       percentage: values.percentage,
+//       certifications: normalize(values.additionalCourses),
+//       company_name: normalize(values.companyName),
+//       previous_designation: normalize(values.expDesignation),
+//       previous_department: normalize(values.expDepartment),
+//       exp_start_date: formatDate(values.experienceStartDate),
+//       exp_end_date: formatDate(values.experienceEndDate),
+//       exp_location: normalize(values.location),
+//       responsibilities: normalize(values.achievements),
+//       basic_salary: Number(values.basicSalary) || 0,
+//       allowance: Number(values.allowanceType) || 0,
+//       bonus: Number(values["bonus/incentives"]) || 0,
+//       deductions: Number(values.deductions) || 0,
+//       net_salary: Number(values["net salary"]) || 0,
+//       asset_type: normalize(values.assetType),
+//       model: normalize(values.assetId),
+//       issued_date: formatDate(values.assetIssuedDate),
+//       return_date: formatDate(values.assetReturnDate),
+//     };
+
+//     // 📌 Add employee_id into details if editing
+//     if (isEditMode) {
+//       details.employee_id = employeeId;
+//     }
+
+//     formData.append("details", JSON.stringify(details));
+
+//     // 👨‍👩‍👧 EMERGENCY CONTACTS
+//     const emergency = (values.emergencyContacts || []).map((c) => ({
+//       emergency_contact_name: normalize(c.contactName),
+//       emergency_contact_phone: normalize(c.phoneNumber),
+//       emergency_contact_relation: normalize(c.relationship),
+//       emergency_contact_address: normalize(c.address),
+//     }));
+//     formData.append("emergency", JSON.stringify(emergency));
+
+//     // 📎 FILE UPLOAD HANDLER
+//     const appendFile = (key, field) => {
+//       const file = values[field]?.originFileObj || values[field];
+//       if (file instanceof File) formData.append(key, file);
+//     };
+
+//     appendFile("profile_picture", "profile_picture_file");
+//     appendFile("resume", "resumeUpload");
+//     appendFile("aadhar", "aadharUpload");
+//     appendFile("pan", "panUpload");
+//     appendFile("degree", "degreeUpload");
+//     appendFile("marksheet", "marksheetUpload");
+//     appendFile("relieving", "relievingUpload");
+//     appendFile("experience", "experienceUpload");
+//     appendFile("offer", "offerLetterUpload");
+//     appendFile("passport", "passportUpload");
+//     appendFile("driving", "drivingLicenseUpload");
+//     appendFile("addressproof", "addressProofUpload");
+//     appendFile("bankproof", "bankProofUpload");
+
+//     // 🚀 API CALLS based on your condition
+//     if (!isEditMode && employeeId) {
+//       // 🟢 POST - Add Employee
+//       await EmployeePersonalApi.add(formData);
+//       message.success("Employee added successfully!");
+//     } else if (isEditMode && employeeId) {
+//       // 🟡 PUT - Update Employee
+//       await EmployeePersonalApi.update(employeeId, formData);
+//       message.success("Employee updated successfully!");
+//     } else {
+//       // ❌ INVALID STATE
+//       message.error("Invalid state! Cannot save employee.");
+//       return null;
+//     }
+
+//     navigate("/employees"); // Redirect to listing after save
+
+//   } catch (err) {
+//     console.error("Save error:", err);
+//     message.error(err.response?.data?.message || "Failed to save employee");
+//   }
+// };
+
+
+// // ✅ FIXED SAVE HANDLER - Proper GET, POST, PUT + Correct Condition
+// const handleSave = async () => {
+//   try {
+//     const values = await form.validateFields();
+
+//     const formatDate = (date) => (date ? dayjs(date).format("YYYY-MM-DD") : null);
+//     const normalize = (val) =>
+//       val === null || val === undefined || val === "" ? null : String(val).trim();
+
+//     const isEditMode = !!id;     // 🔍 Only TRUE when editing
+//     const employeeId = id;       // ID from URL (for update only)
+
+//     // 🛑 Only stop if UPDATE without an employeeId
+//     if (isEditMode && !employeeId) {
+//       message.error("Employee ID is missing for update!");
+//       return null;
+//     }
+
+//     const formData = new FormData();
+
+//     // 📌 For UPDATE - Pass these in root formData
+//     if (isEditMode) {
+//       formData.append("employee_id", employeeId);
+//       formData.append("id", employeeId);
+//       formData.append("employee_code", normalize(values.employeeId) || "");
+//     }
+
+//     // BUILD DETAILS OBJECT
+//     const details = {
+//       employee_code: normalize(values.employeeId) || "",
+//       attendance_id: normalize(values.attendanceId),
+//       first_name: normalize(values.firstName),
+//       last_name: normalize(values.lastName),
+//       reporting_manager: normalize(values.reportingManager),
+//       employee_type: normalize(values.employeeType),
+//       status: normalize(values.status),
+//       shift_type: normalize(values.shiftType),
+//       department_id: normalize(values.department),
+//       designation_id: normalize(values.designation),
+//       branch_id: normalize(values.branch_id),
+//       joining_date: formatDate(values.joiningDate),
+//       dob: formatDate(values.dob),
+//       gender:
+//         values.gender === "male"
+//           ? "Male"
+//           : values.gender === "female"
+//           ? "Female"
+//           : "Other",
+//       marital_status: values.maritalStatus === "single" ? "UnMarried" : "Married",
+//       blood_group: normalize(values.bloodGroup),
+//       nationality: normalize(values.nationality),
+//       permanent_address: normalize(values.permanentAddress),
+//       current_address: normalize(values.currentAddress),
+//       city: normalize(values.city),
+//       state: normalize(values.state),
+//       zip_code: normalize(values.pinCode),
+//       email: normalize(values.email),
+//       mobile_number: normalize(values.mobileNumber),
+//       aadhar_number: normalize(values.aadhaar),
+//       pan_number: normalize(values.panNumber),
+//       pf_number: normalize(values.pf),
+//       tax_no: normalize(values.tax),
+//       bank_name: normalize(values.bankName),
+//       bank_account_number: normalize(values.account_no),
+//       ifsc_code: (values.ifsc_code || "").toUpperCase().trim(),
+//       branch_name: normalize(values.branchName),
+//       qualification: normalize(values.qualification),
+//       specialization: normalize(values.specialization),
+//       institution_name: normalize(values.institution),
+//       university_name: normalize(values.university),
+//       edu_start_date: formatDate(values.educationStartDate),
+//       edu_end_date: formatDate(values.educationEndDate),
+//       percentage: values.percentage,
+//       certifications: normalize(values.additionalCourses),
+//       company_name: normalize(values.companyName),
+//       previous_designation: normalize(values.expDesignation),
+//       previous_department: normalize(values.expDepartment),
+//       exp_start_date: formatDate(values.experienceStartDate),
+//       exp_end_date: formatDate(values.experienceEndDate),
+//       exp_location: normalize(values.location),
+//       responsibilities: normalize(values.achievements),
+//       basic_salary: Number(values.basicSalary) || 0,
+//       allowance: Number(values.allowanceType) || 0,
+//       bonus: Number(values["bonus/incentives"]) || 0,
+//       deductions: Number(values.deductions) || 0,
+//       net_salary: Number(values["net salary"]) || 0,
+//       asset_type: normalize(values.assetType),
+//       model: normalize(values.assetId),
+//       issued_date: formatDate(values.assetIssuedDate),
+//       return_date: formatDate(values.assetReturnDate),
+//     };
+
+//     // 📌 Only on UPDATE add employee_id inside details
+//     if (isEditMode) {
+//       details.employee_id = employeeId;
+//     }
+
+//     formData.append("details", JSON.stringify(details));
+
+//     // Emergency contacts
+//     const emergency = (values.emergencyContacts || []).map((c) => ({
+//       emergency_contact_name: normalize(c.contactName),
+//       emergency_contact_phone: normalize(c.phoneNumber),
+//       emergency_contact_relation: normalize(c.relationship),
+//       emergency_contact_address: normalize(c.address),
+//     }));
+//     formData.append("emergency", JSON.stringify(emergency));
+
+//     // 📎 FILE UPLOAD HANDLER
+//     const appendFile = (key, field) => {
+//       const file = values[field]?.originFileObj || values[field];
+//       if (file instanceof File) formData.append(key, file);
+//     };
+
+//     appendFile("profile_picture", "profile_picture_file");
+//     appendFile("resume", "resumeUpload");
+//     appendFile("aadhar", "aadharUpload");
+//     appendFile("pan", "panUpload");
+//     appendFile("degree", "degreeUpload");
+//     appendFile("marksheet", "marksheetUpload");
+//     appendFile("relieving", "relievingUpload");
+//     appendFile("experience", "experienceUpload");
+//     appendFile("offer", "offerLetterUpload");
+//     appendFile("passport", "passportUpload");
+//     appendFile("driving", "drivingLicenseUpload");
+//     appendFile("addressproof", "addressProofUpload");
+//     appendFile("bankproof", "bankProofUpload");
+
+//     // 🚀 API CALLS based on correct condition
+//     if (!isEditMode) {
+//       // 🟢 POST - Add Employee
+//       await EmployeePersonalApi.add(formData);
+//       message.success("Employee added successfully!");
+//     } else if (isEditMode) {
+//       // 🟡 PUT - Update Employee
+//       await EmployeePersonalApi.update(employeeId, formData);
+//       message.success("Employee updated successfully!");
+//     }
+
+//     navigate("/employees");
+
+//   } catch (err) {
+//     console.error("Save error:", err);
+//     message.error(err.response?.data?.message || "Failed to save employee");
+//   }
+// };
+
+  // ✅ FIXED FETCH DATA - Proper GET with field mapping
+ 
+ 
+ 

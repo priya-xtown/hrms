@@ -1,0 +1,1587 @@
+
+// import React, { useState, useEffect } from "react";
+// import {
+//   Table,
+//   Button,
+//   Input,
+//   Tag,
+//   message,
+//   Select,
+//   Modal,
+//   Space,
+//   Card,
+//   Form,
+//   DatePicker,
+//   Upload,
+//   Avatar,
+//   Popconfirm,
+// } from "antd";
+// import {
+//   UserOutlined,
+//   UploadOutlined,
+//   EditOutlined,
+//   DeleteOutlined,
+//   PlusOutlined,
+// } from "@ant-design/icons";
+// import { useNavigate } from "react-router-dom";
+// import moment from "moment";
+// import dayjs from "dayjs";
+// import EmployeeApi from "./EmployeeApi";
+// import api from "../../../services/api.js";
+
+// const { Option } = Select;
+
+// const Employee = () => {
+//   const navigate = useNavigate();
+//   const primaryColor = "#10b981";
+
+//   const [employees, setEmployees] = useState([]);
+//   const [loading, setLoading] = useState(false);
+//   const [addModalVisible, setAddModalVisible] = useState(false);
+//   const [editModalVisible, setEditModalVisible] = useState(false);
+//   const [form] = Form.useForm();
+//   const [editForm] = Form.useForm();
+//   const [profileImage, setProfileImage] = useState(null);
+//   const [editingEmployee, setEditingEmployee] = useState(null);
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const [pageSize] = useState(10);
+//   const [total, setTotal] = useState(0);
+
+//   useEffect(() => {
+//     fetchEmployees(currentPage);
+//   }, [currentPage]);
+
+//   // const fetchEmployees = async (page = 1) => {
+//   //   try {
+//   //     setLoading(true);
+//   //     const res = await EmployeeApi.getAll(page, pageSize);
+//   //     console.log("✅ Employee list response:", res.data);
+
+//   //     if (Array.isArray(res.data?.rows)) {
+//   //       setEmployees(res.data.rows);
+//   //       setTotal(res.data.count || res.data.rows.length);
+//   //     } else if (Array.isArray(res.data)) {
+//   //       setEmployees(res.data);
+//   //       setTotal(res.data.length);
+//   //     } else {
+//   //       setEmployees([]);
+//   //       setTotal(0);
+//   //     }
+//   //   } catch (err) {
+//   //     console.error("❌ Error fetching employees:", err);
+//   //     message.error(err.response?.data?.message || "Failed to fetch employees");
+//   //   } finally {
+//   //     setLoading(false);
+//   //   }
+//   // };
+
+
+//   const fetchEmployees = async (page = 1) => {
+//   try {
+//     setLoading(true);
+//     const res = await EmployeeApi.getAll(page, pageSize);
+//     console.log("✅ Employee list response:", res.data);
+
+//     let rows = [];
+
+//     if (Array.isArray(res.data?.rows)) {
+//       rows = res.data.rows;
+//       setTotal(res.data.count || res.data.rows.length);
+//     } else if (Array.isArray(res.data)) {
+//       rows = res.data;
+//       setTotal(res.data.length);
+//     } else {
+//       rows = [];
+//       setTotal(0);
+//     }
+
+//     const origin = new URL(api.defaults.baseURL).origin;
+//     const resolveProfileUrl = (p) => {
+//       if (!p || typeof p !== "string") return null;
+//       const s = p.trim();
+//       if (s.startsWith("http")) return s;
+//       if (s.startsWith("/uploads")) return origin + s;
+//       return `${origin}/uploads/employee_profile/${s}`;
+//     };
+
+//     const updatedRows = rows.map((emp) => {
+//       const raw =
+//         emp.profile_picture || emp.profileImage || emp.image || emp.photo || null;
+//       return { ...emp, profile_picture: raw, profile_picture_url: resolveProfileUrl(raw) };
+//     });
+
+//     setEmployees(updatedRows);
+
+//   } catch (err) {
+//     console.error("❌ Error fetching employees:", err);
+//     message.error(err.response?.data?.message || "Failed to fetch employees");
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+//   const handleGenerateAttendanceId = async (firstName, form) => {
+//     if (!firstName?.trim()) return "";
+
+//     try {
+//       // ✅ Correct GET API call with query param
+//       const res = await EmployeeApi.getEmpCodeByName(firstName);
+//       const empCode = res?.data?.data?.emp_code;
+
+//       if (empCode) {
+//         // ✅ Auto-fill (patch) attendance ID field
+//         form.setFieldsValue({ attendance_id: empCode });
+//         message.success(`Attendance ID auto-filled: ${empCode}`);
+//         console.log("✅ Attendance ID updated:", empCode);
+//         return empCode;
+//       } else {
+//         // ✅ No employee found case
+//         message.warning("Employee attendance number not found. Please enter manually.");
+//         console.log("ℹ️ No employee found for", firstName);
+//         form.setFieldsValue({ attendance_id: "" });
+//         return "";
+//       }
+//     } catch (error) {
+//       console.warn("⚠️ Auto-generate attendance ID failed:", error);
+//       message.error("Failed to fetch employee data. Please check the backend.");
+//       return "";
+//     }
+//   };
+
+
+//   const handleAdd = async (values) => {
+//     setLoading(true);
+
+//     try {
+//       const formData = new FormData();
+
+//       // ✅ Include first_name (required for ID generation and backend)
+//       formData.append("first_name", values.first_name);
+//       formData.append("last_name", values.last_name);
+
+//       // ✅ Attendance ID (manual or auto)
+//       formData.append("attendance_id", values.attendance_id || "");
+
+//       // ✅ Format joining date correctly
+//       if (values.date_of_joining) {
+//         formData.append("date_of_joining", values.date_of_joining.format("YYYY-MM-DD"));
+//       }
+
+//       formData.append("reporting_manager", values.reporting_manager || "");
+//       formData.append("employee_type", values.employee_type || "");
+//       formData.append("shift_type", values.shift_type || "");
+//       formData.append("status", values.status || "");
+
+//       // ✅ Attach file if present (supports raw File or {file})
+//       const picVal = values.profile_picture;
+//       if (picVal) {
+//         const fileObj = picVal.file ? picVal.file : picVal;
+//         formData.append("profile_picture", fileObj);
+//       }
+
+//       // ✅ Send request
+//       const res = await EmployeeApi.create(formData);
+
+//       message.success(res.data?.message || "Employee added successfully!");
+//       setAddModalVisible(false);
+//       form.resetFields();
+//       // ✅ Move to next page if overflow
+//       if ((employees.length + 1) > currentPage * pageSize) {
+//         setCurrentPage(currentPage + 1);
+//       }
+//       fetchEmployees();
+//     } catch (err) {
+//       console.error("❌ Error adding employee:", err);
+//       message.error(err?.response?.data?.message || "Failed to add employee");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const handleGetById = async (id) => {
+//     try {
+//       if (!id) {
+//         message.warning("Invalid employee ID");
+//         return null;
+//       }
+
+//       console.log("📡 Fetching employee by ID:", id);
+//       const res = await EmployeeApi.getById(id);
+//       console.log("✅ Employee getById response:", res?.data);
+
+//       let employee =
+//         res?.data?.data ||
+//         res?.data?.employee ||
+//         res?.data?.rows?.[0] ||
+//         res?.data;
+
+//       if (!employee) {
+//         message.warning("Employee not found");
+//         return null;
+//       }
+
+//       const normalized = {
+//         ...employee,
+//         // id: employee.id || employee.emp_id || employee.employee_id || employee._id,
+//         id:  employee.emp_id ,
+//         first_name: employee.first_name || "",
+//         last_name: employee.last_name || "",
+//         reporting_manager: employee.reporting_manager || "",
+//         date_of_joining: employee.date_of_joining
+//           ? dayjs(employee.date_of_joining)
+//           : null,
+//         employee_type: employee.employee_type || "",
+//         shift_type: employee.shift_type || "",
+//         status: employee.status || "",
+//       };
+
+//       console.log("👤 Normalized employee:", normalized);
+//       return normalized;
+//     } catch (err) {
+//       console.error("❌ Error fetching employee:", err);
+//       message.error(err?.response?.data?.message || "Failed to fetch employee");
+//       return null;
+//     }
+//   };
+
+//   // ✅ FIXED: handle edit click — fetches fresh data and pre-fills modal
+//   // ✅ When clicking Edit
+//   const handleEditClick = (record) => {
+//     const origin = new URL(api.defaults.baseURL).origin;
+//     const resolveProfileUrl = (p) => {
+//       if (!p || typeof p !== "string") return null;
+//       const s = p.trim();
+//       if (s.startsWith("http")) return s;
+//       if (s.startsWith("/uploads")) return origin + s;
+//       return `${origin}/uploads/employee_profile/${s}`;
+//     };
+//     setProfileImage(resolveProfileUrl(record.profile_picture || record.profile_picture_url || null));
+//     const id = record.emp_id || record.employee_id || record.id || record._id;
+
+//     if (!id) {
+//       message.error("Employee ID not found");
+//       return;
+//     }
+
+//     // ✅ Set employee and show modal
+//     setEditingEmployee(record);
+//     setEditModalVisible(true);
+
+//     // ✅ Prefill form
+//     editForm.setFieldsValue({
+//       employeeId: record.emp_id || "",
+//       attendanceId: record.attendance_id || "",
+//       firstName: record.first_name || "",
+//       lastName: record.last_name || "",
+//       dateOfJoining: record.date_of_joining ? dayjs(record.date_of_joining) : null,
+//       reportingManager: record.reporting_manager || "",
+//       employeeType: record.employee_type || "",
+//       shiftType: record.shift_type || "",
+//       status: record.status || "",
+//     });
+
+//     setProfileImage(resolveProfileUrl(record.profile_picture || record.profile_picture_url || null));
+//   };
+
+//   // ✅ On update submit
+//  const handleEdit = async (values) => {
+//   try {
+//     setLoading(true);
+
+//     const id =
+//       editingEmployee?._id ||
+//       editingEmployee?.id ||
+//       editingEmployee?.emp_id;
+
+//     if (!id) {
+//       message.error("Employee ID missing for update");
+//       return;
+//     }
+
+//     const formData = new FormData();
+
+//     formData.append("emp_id", values.employeeId);
+//     formData.append("attendance_id", values.attendanceId);
+//     formData.append("first_name", values.firstName);
+//     formData.append("last_name", values.lastName);
+
+//     if (values.dateOfJoining) {
+//       formData.append(
+//         "date_of_joining",
+//         values.dateOfJoining.format("YYYY-MM-DD")
+//       );
+//     }
+
+//     formData.append("reporting_manager", values.reportingManager || "");
+//     formData.append("employee_type", values.employeeType || "");
+//     formData.append("shift_type", values.shiftType || "");
+//     formData.append("status", values.status || "");
+
+//     // 📌 Only attach file if new image is uploaded
+//     if (values.profile_picture?.file) {
+//       formData.append("profile_picture", values.profile_picture.file);
+//     } else if (editingEmployee?.profile_picture) {
+//       // keep existing image
+//       formData.append("profile_picture", editingEmployee.profile_picture);
+//     }
+
+//     console.log("🟢 Sending update to formData:", id);
+
+//     const res = await EmployeeApi.update(id, formData);
+
+//     if (res.status === 200 || res.data?.success) {
+//       message.success(res.data?.message || "Employee updated successfully");
+//       setEditModalVisible(false);
+//       setProfileImage(null);
+//       fetchEmployees();
+//     } else {
+//       message.error(res.data?.message || "Failed to update employee");
+//     }
+//   } catch (err) {
+//     console.error("❌ Update Error:", err);
+//     message.error(err.response?.data?.message || "Failed to update employee");
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+
+
+
+//   const handleFirstNameBlur = async () => {
+//     const first_name = form.getFieldValue("first_name");
+//     await handleGenerateAttendanceId(first_name, form);
+//   };
+
+
+//   // Delete Employee
+
+//   const handleDelete = async (id) => {
+//     try {
+//       setLoading(true);
+//       console.log("🗑️ Deleting employee ID:", id);
+
+//       const res = await EmployeeApi.delete(id);
+
+//       if (res?.status === 200 || res?.data?.success) {
+//         message.success(res?.data?.message || "Employee deleted successfully!");
+//         await fetchEmployees(); // refresh list
+//       } else {
+//         message.error(res?.data?.message || "Failed to delete employee");
+//       }
+//     } catch (err) {
+//       console.error("❌ Delete Error:", err);
+//       if (err.response) {
+//         message.error(err.response.data?.message || "Server error while deleting");
+//       } else if (err.request) {
+//         message.error("No response from server. Check backend connection.");
+//       } else {
+//         message.error("Error setting up delete request.");
+//       }
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   //filter
+
+//   const totalEmployees = employees.length;
+//   const activeEmployees = employees.filter(
+//     (e) => e.status?.toLowerCase() === "active"
+//   ).length;
+//   const inactiveEmployees = employees.filter(
+//     (e) => e.status?.toLowerCase() === "inactive"
+//   ).length;
+//   const newJoiners = employees.filter(
+//     (e) =>
+//       e.date_of_joining &&
+//       moment().diff(moment(e.date_of_joining), "days") <= 30
+//   ).length;
+
+
+//   const dynamicStats = [
+//     { title: "Total Employees", value: totalEmployees, color: "bg-black" },
+//     { title: "Active", value: activeEmployees, color: "bg-green-500" },
+//     { title: "Inactive", value: inactiveEmployees, color: "bg-red-500" },
+//     { title: "New Joiners", value: newJoiners, color: "bg-blue-500" },
+//   ];
+
+//   const columns = [
+//     { title: "S.No", render: (_, __, i) => i + 1 },
+//     {
+//   title: "Profile",
+//   dataIndex: "profile_picture",
+//   render: (_, record) => {
+//     const origin = new URL(api.defaults.baseURL).origin;
+
+//     const resolveProfileUrl = (p) => {
+//       if (!p || typeof p !== "string") return null;
+//       const s = p.trim();
+//       if (s.startsWith("http")) return s;
+//       if (s.startsWith("/")) return origin + s; 
+//       return `${origin}/uploads/employee_profile/${s}`;
+//     };
+
+//     const finalSrc = resolveProfileUrl(record.profile_picture || record.profile_picture_url);
+
+//     return (
+//       <Avatar
+//         src={finalSrc}
+//         icon={<UserOutlined />}
+//         size={40}
+//         style={{ backgroundColor: "#f0f0f0" }}
+//       />
+//     );
+//   },
+// },
+
+//     {
+//       title: "Employee ID",
+//       dataIndex: "emp_id",
+//       render: (id, record) => (
+//         <span
+//           style={{ color: "blue", cursor: "pointer", textDecoration: "underline" }}
+//           // onClick={() => {
+//           //   // Use _id for API lookup (MongoDB primary key), but pass full record in state
+//           //   const targetId =  record.id ;
+//           //   console.log("targetId :", targetId);
+//           //   navigate(`/hrms/pages/employee/${targetId}`, {
+//           //     state: { employee: record },
+//           //   });
+//           // }}
+//           onClick={() => {
+//             const targetId = record._id || record.id || record.emp_id || record.employee_id;
+//             console.log("targetId :", targetId);
+
+//             navigate(`/hrms/pages/employee/${targetId}`, {
+//               state: { employee: record },
+//             });
+//           }}
+
+//         >
+//           {id}
+//         </span>
+//       ),
+//     },
+//     {
+//       title: "Name",
+//       render: (_, record) => `${record.first_name || ""} ${record.last_name || ""}`,
+//     },
+//     { title: "Reporting Manager", dataIndex: "reporting_manager" },
+//     { title: "Employee Type", dataIndex: "employee_type" },
+//     {
+//       title: "Status",
+//       dataIndex: "status",
+//       render: (s) => (
+//         <Tag color={s?.toLowerCase() === "active" ? "green" : "red"}>
+//           {s}
+//         </Tag>
+//       ),
+//     },
+
+//     { title: "Shift Type", dataIndex: "shift_type" },
+//     {
+//       title: "Actions",
+//       render: (_, record) => (
+//         <Space>
+
+//           <Button
+//             icon={<EditOutlined />}
+//             onClick={() => handleEditClick(record)}
+//           />
+//           <Popconfirm
+//             title="Delete?"
+//             // onConfirm={() => handleDelete(record.id)} // ✅ send backend UUID
+//             onConfirm={() =>
+//               handleDelete(
+//                 record._id || record.id || record.emp_id || record.employee_id
+//               )
+//             }
+
+//             okText="Yes"
+//             cancelText="No"
+//           >
+//             <Button danger icon={<DeleteOutlined />} />
+//           </Popconfirm>
+
+//         </Space>
+//       ),
+//     },
+//   ];
+//   return (
+//     <div className="bg-white p-4">
+//       {/* Stats Cards */}
+//       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+//         {dynamicStats.map((s) => (
+//           <Card key={s.title} className="flex flex-row items-center gap-3 shadow">
+//             <div
+//               className={`rounded-full h-10 w-10 flex items-center justify-center ${s.color}`}
+//             >
+//               <UserOutlined className="text-white text-xl" />
+//             </div>
+//             <div>
+//               <div className="text-xs font-medium text-gray-600">{s.title}</div>
+//               <div className="text-xl font-bold">{s.value}</div>
+//             </div>
+//           </Card>
+//         ))}
+//       </div>
+
+//       {/* Header */}
+//       <div className="flex justify-between items-center mb-3">
+//         <h2 className="font-semibold text-xl">Employee</h2>
+        
+//         <Button
+//   type="primary"
+//   onClick={() => {
+//     setProfileImage(null); // 🔥 Reset image only for Add modal
+//     setAddModalVisible(true);
+//   }}
+// >
+//   Add Employee
+// </Button>
+//       </div>
+
+//       <div>
+//         {/* ✅ Table with proper pagination */}
+//         <Table
+//           columns={columns}
+//           dataSource={employees}
+//           rowKey={(record) => record._id || record.id}
+//           loading={loading}
+//           bordered
+//           pagination={{
+//             current: currentPage,
+//             pageSize: pageSize,
+//             total: total,
+//             onChange: (page) => setCurrentPage(page),
+//             showSizeChanger: false, // optional: keep fixed 10 per page
+//           }}
+//         />
+//         {/* ✅ Custom continuous pagination buttons */}
+//         <div className="flex justify-center items-center mt-4 gap-3">
+//           <Button
+//             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+//             disabled={currentPage === 1}
+//           >
+//             Previous
+//           </Button>
+
+//           <span>
+//             Page {currentPage} of {Math.ceil(total / pageSize)}
+//           </span>
+
+//           <Button
+//             onClick={() =>
+//               setCurrentPage((prev) =>
+//                 prev < Math.ceil(total / pageSize)
+//                   ? prev + 1
+//                   : prev
+//               )
+//             }
+//             disabled={currentPage === Math.ceil(total / pageSize)}
+//           >
+//             Next
+//           </Button>
+//         </div>
+//       </div>
+
+
+//       {/* Add Employee Modal */}
+//       <Modal
+//         title="Add Employee"
+//         open={addModalVisible}
+//         onCancel={() => setAddModalVisible(false)}
+//         footer={null}
+//         width={800}
+//       >
+//         <Form form={form} layout="vertical" onFinish={handleAdd}>
+//           <Form.Item name="profile_picture" label="Profile Picture">
+//             <div className="flex items-center gap-4">
+//                 <div
+//                   className="relative rounded-full flex items-center justify-center overflow-hidden bg-gray-100"
+//                   style={{ width: 64, height: 64 }}
+//                 >
+//                   {profileImage ? (
+//                     <img
+//                       src={profileImage}
+//                       alt="profile"
+//                       className="w-full h-full object-cover"
+//                     />
+//                   ) : (
+//                     <UserOutlined style={{ fontSize: 28, color: "#bfbfbf" }} />
+//                   )}
+
+//                   {profileImage && (
+//                     <div className="absolute inset-0 flex items-center justify-center gap-3 bg-white bg-opacity-40 opacity-0 hover:opacity-100 transition-opacity">
+//                     <Upload
+//                       beforeUpload={(file) => {
+//                         setProfileImage(URL.createObjectURL(file));
+//                         form.setFieldsValue({ profile_picture: file });
+//                         return false;
+//                       }}
+//                       showUploadList={false}
+//                     >
+//                       <EditOutlined
+//                         style={{ fontSize: 18, color: "gray", cursor: "pointer" }}
+//                       />
+//                     </Upload>
+//                     <DeleteOutlined
+//                       style={{ fontSize: 18, color: "gray", cursor: "pointer" }}
+//                       onClick={() => { setProfileImage(null); form.setFieldsValue({ profile_picture: undefined }); }}
+//                     />
+//                   </div>
+//                   )}
+//                 </div>
+
+//                 {!profileImage && (
+//                 <Upload
+//                   beforeUpload={(file) => {
+//                     setProfileImage(URL.createObjectURL(file));
+//                     form.setFieldsValue({ profile_picture: file });
+//                     return false;
+//                   }}
+//                   showUploadList={false}
+//                 >
+//                   <UploadOutlined
+//                     style={{ fontSize: 22, color: "#1890ff", cursor: "pointer" }}
+//                   />
+//                 </Upload>
+//                 )}
+//               </div>
+//             </Form.Item>
+
+//           {/* Required Fields */}
+//           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+//             <Form.Item name="emp_id" label="Employee ID">
+//               <Input disabled placeholder="Auto-generated" />
+//             </Form.Item>
+
+//             <Form.Item
+//               name="attendance_id"
+//               label="Attendance ID"
+//               rules={[{ required: true, message: "Please enter Attendece id " }]}
+//             >
+//               <Input placeholder="Auto-generated or enter manually" />
+//             </Form.Item>
+
+//             <Form.Item name="first_name" label="First Name" rules={[{ required: true, message: "Please enter First Name" }]}
+//             >
+//               <Input
+//                 style={{ width: 220 }}
+//                 onBlur={handleFirstNameBlur} // 👈 triggers when user finishes typing
+//               />
+//             </Form.Item>
+
+//             <Form.Item name="last_name" label="Last Name" rules={[{ required: true }]}>
+//               <Input />
+//             </Form.Item>
+//             <Form.Item name="date_of_joining" label="Date of Joining" rules={[{ required: true }]}>
+//               <DatePicker style={{ width: "100%" }} />
+//             </Form.Item>
+//             <Form.Item name="reporting_manager" label="Reporting Manager" rules={[{ required: true }]}>
+//               <Input />
+//             </Form.Item>
+//             <Form.Item name="employee_type" label="Employee Type" rules={[{ required: true }]}>
+//               <Select placeholder="Select Type">
+//                 <Option value="permanent">Permanent</Option>
+//                 <Option value="contract">Contract</Option>
+//                 <Option value="intern">Intern</Option>
+//               </Select>
+//             </Form.Item>
+//             <Form.Item name="status" label="Status" rules={[{ required: true }]}>
+//               <Select placeholder="Select Status">
+//                 <Option value="active">Active</Option>
+//                 <Option value="inactive">Inactive</Option>
+//               </Select>
+//             </Form.Item>
+//             <Form.Item
+//               name="shift_type"
+//               label="Shift Type"
+//               rules={[{ required: true, message: "Please select a shift type" }]}
+//             >
+//               <Select placeholder="Select Shift Type">
+//                 <Option value="day">Day Shift</Option>
+//                 <Option value="night">Night Shift</Option>
+//               </Select>
+//             </Form.Item>
+//           </div>
+
+//           <Form.Item className="flex justify-end gap-2">
+//             <Button onClick={() => setAddModalVisible(false)}>Cancel</Button>
+//             <Button type="primary" htmlType="submit" loading={loading}>
+//               Save
+//             </Button>
+//           </Form.Item>
+//         </Form>
+//       </Modal>
+
+//       {/* Edit Employee Modal */}
+//       <Modal
+//         title="Edit Employee"
+//         open={editModalVisible}
+//         onCancel={() => setEditModalVisible(false)}
+//         footer={null}
+//         width={800}
+//       >
+//         <Form form={editForm} layout="vertical" onFinish={handleEdit}>
+//           <Form.Item name="profile_picture" label="Profile Picture">
+//             <div className="flex items-center gap-4">
+//               <div
+//                 className="relative rounded-full flex items-center justify-center overflow-hidden bg-gray-100"
+//                 style={{ width: 64, height: 64 }}
+//               >
+//                 {profileImage ? (
+//                   <img
+//                     src={profileImage}
+//                     alt="profile"
+//                     className="w-full h-full object-cover"
+//                   />
+//                 ) : (
+//                   <UserOutlined style={{ fontSize: 28, color: "#bfbfbf" }} />
+//                 )}
+
+//                 {profileImage && (
+//                   <div className="absolute inset-0 flex items-center justify-center gap-3 bg-white bg-opacity-40 opacity-0 hover:opacity-100 transition-opacity">
+//                     <Upload
+//                       beforeUpload={(file) => {
+//                         setProfileImage(URL.createObjectURL(file));
+//                         editForm.setFieldsValue({ profile_picture: file });
+//                         return false;
+//                       }}
+//                       showUploadList={false}
+//                     >
+//                       <EditOutlined
+//                         style={{ fontSize: 18, color: "gray", cursor: "pointer" }}
+//                       />
+//                     </Upload>
+//                     <DeleteOutlined
+//                       style={{ fontSize: 18, color: "gray", cursor: "pointer" }}
+//                       onClick={() => { setProfileImage(null); editForm.setFieldsValue({ profile_picture: undefined }); }}
+//                     />
+//                   </div>
+//                 )}
+//               </div>
+
+//               {!profileImage && (
+//                 <Upload
+//                   beforeUpload={(file) => {
+//                     setProfileImage(URL.createObjectURL(file));
+//                     editForm.setFieldsValue({ profile_picture: file });
+//                     return false;
+//                   }}
+//                   showUploadList={false}
+//                 >
+//                   <UploadOutlined
+//                     style={{ fontSize: 22, color: "#1890ff", cursor: "pointer" }}
+//                   />
+//                 </Upload>
+//               )}
+//             </div>
+//           </Form.Item>
+
+//           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+//             <Form.Item name="employeeId" label="Employee ID" rules={[{ required: true }]}>
+//               <Input />
+//             </Form.Item>
+//             <Form.Item name="attendanceId" label="Attendance ID" rules={[{ required: true }]}>
+//               <Input />
+//             </Form.Item>
+//             <Form.Item name="firstName" label="First Name" rules={[{ required: true }]}>
+//               <Input />
+//             </Form.Item>
+//             <Form.Item name="lastName" label="Last Name" rules={[{ required: true }]}>
+//               <Input />
+//             </Form.Item>
+//             <Form.Item name="dateOfJoining" label="Date of Joining" rules={[{ required: true }]}>
+//               <DatePicker style={{ width: "100%" }} />
+//             </Form.Item>
+//             <Form.Item name="reportingManager" label="Reporting Manager" rules={[{ required: true }]}>
+//               <Input />
+//             </Form.Item>
+//             <Form.Item name="employeeType" label="Employee Type" rules={[{ required: true }]}>
+//               <Select placeholder="Select Type">
+//                 <Option value="permanent">Permanent</Option>
+//                 <Option value="contract">Contract</Option>
+//                 <Option value="intern">Intern</Option>
+//               </Select>
+//             </Form.Item>
+//             <Form.Item name="status" label="Status" rules={[{ required: true }]}>
+//               <Select placeholder="Select Status">
+//                 <Option value="active">Active</Option>
+//                 <Option value="inactive">Inactive</Option>
+//               </Select>
+//             </Form.Item>
+//             <Form.Item
+//               name="shiftType"
+//               label="Shift Type"
+//               rules={[{ required: true, message: "Please select a shift type" }]}
+//             >
+//               <Select placeholder="Select Shift Type">
+//                 <Option value="day">Day Shift</Option>
+//                 <Option value="night">Night Shift</Option>
+//               </Select>
+//             </Form.Item>
+//           </div>
+
+//           <Form.Item className="flex justify-end gap-2">
+//             <Button onClick={() => setEditModalVisible(false)}>Cancel</Button>
+//             <Button type="primary" htmlType="submit" loading={loading}>
+//               Update
+//             </Button>
+//           </Form.Item>
+//         </Form>
+//       </Modal>
+//     </div>
+//   );
+// };
+
+// export default Employee;
+
+
+
+
+
+// src/modules/employee/Employee.jsx
+import React, { useState, useEffect } from "react";
+import {
+  Table,
+  Button,
+  Input,
+  Tag,
+  message,
+  Select,
+  Modal,
+  Space,
+  Card,
+  Form,
+  DatePicker,
+  Upload,
+  Avatar,
+  Popconfirm,
+} from "antd";
+import {
+  UserOutlined,
+  UploadOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
+import EmployeeApi from "./EmployeeApi";
+import api from "../../../services/api.js";
+
+const { Option } = Select;
+
+/**
+ * Helper: Resolve profile URL reliably, removing duplicate segments and handling cases:
+ * - absolute http(s) URLs
+ * - paths starting with / or starting with uploads
+ * - just filenames
+ */
+const resolveProfileUrl = (p, baseOrigin) => {
+  if (!p) return null;
+  if (typeof p !== "string") return null;
+
+  const trimmed = p.trim();
+
+  // If full URL provided
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+
+  // Remove leading slashes to avoid double slashes when concatenating
+  const cleaned = trimmed.replace(/^\/+/, "");
+
+  // If backend already returned 'uploads/...' or 'uploads/employee_profile/...' just join with origin
+  if (cleaned.startsWith("uploads/")) {
+    return `${baseOrigin}/${cleaned}`;
+  }
+
+  // If backend returned something like 'employee_profile/xxx.jpg' — handle it
+  if (cleaned.startsWith("employee_profile/")) {
+    return `${baseOrigin}/${cleaned}`;
+  }
+
+  // Otherwise assume it's a filename stored in employee_profile folder
+  return `${baseOrigin}/uploads/employee_profile/${cleaned}`;
+};
+
+const Employee = () => {
+  const navigate = useNavigate();
+  const primaryColor = "#10b981";
+
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [form] = Form.useForm();
+  const [editForm] = Form.useForm();
+  const [profileImage, setProfileImage] = useState(null); // preview in modal
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+
+  // Base origin for images
+  const origin = (() => {
+    try {
+      return new URL(api.defaults.baseURL).origin;
+    } catch (e) {
+      return ""; // fallback
+    }
+  })();
+
+  useEffect(() => {
+    fetchEmployees(currentPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
+
+  /**
+   * Fetch employees (paginated). Normalizes response into rows array and maps profile_picture_url.
+   */
+  const fetchEmployees = async (page = 1) => {
+    try {
+      setLoading(true);
+      const res = await EmployeeApi.getAll(page, pageSize);
+      // res.data may be { rows: [...], count } or an array
+      let rows = [];
+      let count = 0;
+
+      if (res?.data) {
+        if (Array.isArray(res.data)) {
+          rows = res.data;
+          count = res.data.length;
+        } else if (Array.isArray(res.data.rows)) {
+          rows = res.data.rows;
+          count = typeof res.data.count === "number" ? res.data.count : res.data.rows.length;
+        } else {
+          // fallback: treat res.data as a single object?
+          rows = Array.isArray(res.data) ? res.data : [];
+          count = rows.length;
+        }
+      }
+
+      // Normalize and build final image url
+      const updatedRows = rows.map((emp) => {
+        const raw =
+          emp.profile_picture ||
+          emp.profileImage ||
+          emp.image ||
+          emp.photo ||
+          emp.profile_picture_url ||
+          null;
+        const final = resolveProfileUrl(raw, origin);
+        return {
+          ...emp,
+          profile_picture: raw,
+          profile_picture_url: final,
+        };
+      });
+
+      setEmployees(updatedRows);
+      setTotal(count);
+      // keep currentPage state in sync (in case caller passed different page param)
+      setCurrentPage(page);
+    } catch (err) {
+      console.error("❌ Error fetching employees:", err);
+      message.error(err?.response?.data?.message || "Failed to fetch employees");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Auto-generate attendance id (keeps original logic, but robust error handling)
+   */
+  const handleGenerateAttendanceId = async (firstName, formRef) => {
+    if (!firstName?.trim()) return "";
+    try {
+      const res = await EmployeeApi.getEmpCodeByName(firstName);
+      const empCode = res?.data?.data?.emp_code || res?.data?.emp_code || null;
+      if (empCode) {
+        formRef.setFieldsValue({ attendance_id: empCode });
+        message.success(`Attendance ID auto-filled: ${empCode}`);
+        return empCode;
+      } else {
+        formRef.setFieldsValue({ attendance_id: "" });
+        message.warning("Employee attendance number not found. Please enter manually.");
+        return "";
+      }
+    } catch (error) {
+      console.warn("⚠️ Auto-generate attendance ID failed:", error);
+      message.error("Failed to fetch employee data. Please check the backend.");
+      return "";
+    }
+  };
+
+  /**
+   * Add employee
+   */
+  const handleAdd = async (values) => {
+    setLoading(true);
+    try {
+      const formData = new FormData();
+
+      formData.append("first_name", values.first_name || "");
+      formData.append("last_name", values.last_name || "");
+      formData.append("attendance_id", values.attendance_id || "");
+
+      if (values.date_of_joining) {
+        formData.append("date_of_joining", values.date_of_joining.format("YYYY-MM-DD"));
+      } else {
+        formData.append("date_of_joining", "");
+      }
+
+      formData.append("reporting_manager", values.reporting_manager || "");
+      formData.append("employee_type", values.employee_type || "");
+      formData.append("shift_type", values.shift_type || "");
+      formData.append("status", values.status || "");
+
+      // profile picture: Ant Upload gives file object or File
+      const picVal = values.profile_picture;
+      if (picVal) {
+        // if user used beforeUpload and stored a File, picVal might be File; if not, handle .file
+        const fileObj = picVal.file ? picVal.file : picVal;
+        formData.append("profile_picture", fileObj);
+      }
+
+      const res = await EmployeeApi.create(formData);
+      const serverMessage = res?.data?.message || "Employee added successfully!";
+      message.success(serverMessage);
+      setAddModalVisible(false);
+      form.resetFields();
+      setProfileImage(null);
+
+      // Update pagination: compute new total & page where it should appear
+      const newTotal = (typeof total === "number" ? total : employees.length) + 1;
+      const newPage = Math.max(1, Math.ceil(newTotal / pageSize));
+      setTotal(newTotal);
+      // fetch updated list on the page that will contain the newly added item
+      await fetchEmployees(newPage);
+    } catch (err) {
+      console.error("❌ Error adding employee:", err);
+      message.error(err?.response?.data?.message || "Failed to add employee");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Get employee by id and normalize for edit form
+   */
+  const handleGetById = async (id) => {
+    try {
+      if (!id) {
+        message.warning("Invalid employee ID");
+        return null;
+      }
+      const res = await EmployeeApi.getById(id);
+
+      let employee =
+        res?.data?.data ||
+        res?.data?.employee ||
+        res?.data?.rows?.[0] ||
+        res?.data ||
+        null;
+
+      if (!employee) {
+        message.warning("Employee not found");
+        return null;
+      }
+
+      const normalized = {
+        ...employee,
+        id: employee.emp_id || employee._id || employee.id,
+        first_name: employee.first_name || "",
+        last_name: employee.last_name || "",
+        reporting_manager: employee.reporting_manager || "",
+        date_of_joining: employee.date_of_joining ? dayjs(employee.date_of_joining) : null,
+        employee_type: employee.employee_type || "",
+        shift_type: employee.shift_type || "",
+        status: employee.status || "",
+        profile_picture_url: resolveProfileUrl(
+          employee.profile_picture || employee.profile_picture_url || employee.photo,
+          origin
+        ),
+      };
+
+      return normalized;
+    } catch (err) {
+      console.error("❌ Error fetching employee:", err);
+      message.error(err?.response?.data?.message || "Failed to fetch employee");
+      return null;
+    }
+  };
+
+  /**
+   * Click Edit handler
+   */
+  const handleEditClick = (record) => {
+    const id = record._id || record.id || record.emp_id || record.employee_id;
+    if (!id) {
+      message.error("Employee ID not found");
+      return;
+    }
+
+    // Build preview image url
+    const preview = resolveProfileUrl(record.profile_picture || record.profile_picture_url, origin);
+    setProfileImage(preview);
+
+    setEditingEmployee(record);
+    setEditModalVisible(true);
+
+    // Prefill edit form
+    editForm.setFieldsValue({
+      employeeId: record.emp_id || "",
+      attendanceId: record.attendance_id || "",
+      firstName: record.first_name || "",
+      lastName: record.last_name || "",
+      dateOfJoining: record.date_of_joining ? dayjs(record.date_of_joining) : null,
+      reportingManager: record.reporting_manager || "",
+      employeeType: record.employee_type || "",
+      shiftType: record.shift_type || "",
+      status: record.status || "",
+    });
+  };
+
+  /**
+   * Edit submit handler
+   */
+  const handleEdit = async (values) => {
+    try {
+      setLoading(true);
+
+      const id =
+        editingEmployee?._id || editingEmployee?.id || editingEmployee?.emp_id;
+
+      if (!id) {
+        message.error("Employee ID missing for update");
+        return;
+      }
+
+      const formData = new FormData();
+
+      // Append fields
+      formData.append("emp_id", values.employeeId);
+      formData.append("attendance_id", values.attendanceId);
+      formData.append("first_name", values.firstName);
+      formData.append("last_name", values.lastName);
+      formData.append(
+        "date_of_joining",
+        values.dateOfJoining ? values.dateOfJoining.format("YYYY-MM-DD") : ""
+      );
+      formData.append("reporting_manager", values.reportingManager || "");
+      formData.append("employee_type", values.employeeType || "");
+      formData.append("shift_type", values.shiftType || "");
+      formData.append("status", values.status || "");
+
+      // Only attach file if user uploaded new file via Upload beforeUpload -> file stored in values.profile_picture
+      if (values.profile_picture?.file) {
+        formData.append("profile_picture", values.profile_picture.file);
+      }
+
+      const res = await EmployeeApi.update(id, formData);
+
+      if (res?.status === 200 || res?.data?.success) {
+        message.success(res.data?.message || "Employee updated successfully");
+        setEditModalVisible(false);
+        setProfileImage(null);
+        setEditingEmployee(null);
+        // refresh current page
+        fetchEmployees(currentPage);
+      } else {
+        message.error(res.data?.message || "Failed to update employee");
+      }
+    } catch (err) {
+      console.error("❌ Update Error:", err);
+      message.error(err?.response?.data?.message || "Failed to update employee");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Delete
+   */
+  const handleDelete = async (id) => {
+    try {
+      setLoading(true);
+      const res = await EmployeeApi.delete(id);
+      if (res?.status === 200 || res?.data?.success) {
+        message.success(res?.data?.message || "Employee deleted successfully!");
+        // Refresh: if deletion makes current page empty, go to previous page
+        const newTotal = Math.max(0, total - 1);
+        const maxPage = Math.max(1, Math.ceil(newTotal / pageSize));
+        const pageToFetch = currentPage > maxPage ? maxPage : currentPage;
+        setTotal(newTotal);
+        await fetchEmployees(pageToFetch);
+      } else {
+        message.error(res?.data?.message || "Failed to delete employee");
+      }
+    } catch (err) {
+      console.error("❌ Delete Error:", err);
+      message.error(err?.response?.data?.message || "Server error while deleting");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Stats (local)
+  const totalEmployees = employees.length;
+  const activeEmployees = employees.filter((e) => e.status?.toLowerCase() === "active").length;
+  const inactiveEmployees = employees.filter((e) => e.status?.toLowerCase() === "inactive").length;
+  const newJoiners = employees.filter(
+    (e) =>
+      e.date_of_joining &&
+      dayjs().diff(dayjs(e.date_of_joining), "days") <= 30
+  ).length;
+
+  const dynamicStats = [
+    { title: "Total Employees", value: totalEmployees, color: "bg-black" },
+    { title: "Active", value: activeEmployees, color: "bg-green-500" },
+    { title: "Inactive", value: inactiveEmployees, color: "bg-red-500" },
+    { title: "New Joiners", value: newJoiners, color: "bg-blue-500" },
+  ];
+
+  // Columns
+  const columns = [
+    { title: "S.No", render: (_, __, i) => i + 1 },
+
+    {
+      title: "Profile",
+      dataIndex: "profile_picture",
+      render: (_, record) => {
+        const img = record.profile_picture_url || resolveProfileUrl(record.profile_picture, origin);
+        return (
+          <Avatar
+            src={img}
+            icon={<UserOutlined />}
+            size={40}
+            style={{ backgroundColor: "#f0f0f0" }}
+          />
+        );
+      },
+    },
+
+    {
+      title: "Employee ID",
+      dataIndex: "emp_id",
+      render: (id, record) => (
+        <span
+          style={{ color: "blue", cursor: "pointer", textDecoration: "underline" }}
+          onClick={() => {
+            const targetId = record._id || record.id || record.emp_id || record.employee_id;
+            navigate(`/hrms/pages/employee/${targetId}`, { state: { employee: record } });
+          }}
+        >
+          {id}
+        </span>
+      ),
+    },
+    {
+      title: "Name",
+      render: (_, record) => `${record.first_name || ""} ${record.last_name || ""}`,
+    },
+    { title: "Reporting Manager", dataIndex: "reporting_manager" },
+    { title: "Employee Type", dataIndex: "employee_type" },
+    {
+      title: "Status",
+      dataIndex: "status",
+      render: (s) => <Tag color={s?.toLowerCase() === "active" ? "green" : "red"}>{s}</Tag>,
+    },
+    { title: "Shift Type", dataIndex: "shift_type" },
+    {
+      title: "Actions",
+      render: (_, record) => (
+        <Space>
+          <Button icon={<EditOutlined />} onClick={() => handleEditClick(record)} />
+          <Popconfirm
+            title="Delete?"
+            onConfirm={() =>
+              handleDelete(record._id || record.id || record.emp_id || record.employee_id)
+            }
+            okText="Yes"
+            cancelText="No"
+          >
+            <Button danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
+  return (
+    <div className="bg-white p-4">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {dynamicStats.map((s) => (
+          <Card key={s.title} className="flex flex-row items-center gap-3 shadow">
+            <div className={`rounded-full h-10 w-10 flex items-center justify-center ${s.color}`}>
+              <UserOutlined className="text-white text-xl" />
+            </div>
+            <div>
+              <div className="text-xs font-medium text-gray-600">{s.title}</div>
+              <div className="text-xl font-bold">{s.value}</div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Header */}
+      <div className="flex justify-between items-center mb-3">
+        <h2 className="font-semibold text-xl">Employee</h2>
+        <Button
+          type="primary"
+          onClick={() => {
+            setProfileImage(null);
+            setAddModalVisible(true);
+          }}
+        >
+          Add Employee
+        </Button>
+      </div>
+
+      <div>
+        <Table
+          columns={columns}
+          dataSource={employees}
+          rowKey={(record) => record._id || record.id || record.emp_id}
+          loading={loading}
+          bordered
+          pagination={{
+            current: currentPage,
+            pageSize: pageSize,
+            total: total,
+            onChange: (page) => setCurrentPage(page),
+            showSizeChanger: false,
+          }}
+        />
+
+        <div className="flex justify-center items-center mt-4 gap-3">
+          <Button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
+            Previous
+          </Button>
+
+          <span>
+            Page {currentPage} of {Math.max(1, Math.ceil(total / pageSize))}
+          </span>
+
+          <Button
+            onClick={() => setCurrentPage((prev) => (prev < Math.ceil(total / pageSize) ? prev + 1 : prev))}
+            disabled={currentPage >= Math.ceil(total / pageSize)}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+
+      {/* Add Employee Modal */}
+      <Modal title="Add Employee" open={addModalVisible} onCancel={() => setAddModalVisible(false)} footer={null} width={800}>
+        <Form form={form} layout="vertical" onFinish={handleAdd}>
+          <Form.Item name="profile_picture" label="Profile Picture">
+            <div className="flex items-center gap-4">
+              <div className="relative rounded-full flex items-center justify-center overflow-hidden bg-gray-100" style={{ width: 64, height: 64 }}>
+                {profileImage ? (
+                  <img src={profileImage} alt="profile" className="w-full h-full object-cover" />
+                ) : (
+                  <UserOutlined style={{ fontSize: 28, color: "#bfbfbf" }} />
+                )}
+
+                {profileImage && (
+                  <div className="absolute inset-0 flex items-center justify-center gap-3 bg-white bg-opacity-40 opacity-0 hover:opacity-100 transition-opacity">
+                    <Upload
+                      beforeUpload={(file) => {
+                        setProfileImage(URL.createObjectURL(file));
+                        form.setFieldsValue({ profile_picture: file });
+                        return false;
+                      }}
+                      showUploadList={false}
+                    >
+                      <EditOutlined style={{ fontSize: 18, color: "gray", cursor: "pointer" }} />
+                    </Upload>
+                    <DeleteOutlined
+                      style={{ fontSize: 18, color: "gray", cursor: "pointer" }}
+                      onClick={() => {
+                        setProfileImage(null);
+                        form.setFieldsValue({ profile_picture: undefined });
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {!profileImage && (
+                <Upload
+                  beforeUpload={(file) => {
+                    setProfileImage(URL.createObjectURL(file));
+                    form.setFieldsValue({ profile_picture: file });
+                    return false;
+                  }}
+                  showUploadList={false}
+                >
+                  <UploadOutlined style={{ fontSize: 22, color: "#1890ff", cursor: "pointer" }} />
+                </Upload>
+              )}
+            </div>
+          </Form.Item>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Form.Item name="emp_id" label="Employee ID">
+              <Input disabled placeholder="Auto-generated" />
+            </Form.Item>
+
+            <Form.Item name="attendance_id" label="Attendance ID" rules={[{ required: true, message: "Please enter Attendance id " }]}>
+              <Input placeholder="Auto-generated or enter manually" />
+            </Form.Item>
+
+            <Form.Item name="first_name" label="First Name" rules={[{ required: true, message: "Please enter First Name" }]}>
+              <Input style={{ width: 220 }} onBlur={async () => handleGenerateAttendanceId(form.getFieldValue("first_name"), form)} />
+            </Form.Item>
+
+            <Form.Item name="last_name" label="Last Name" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+
+            <Form.Item name="date_of_joining" label="Date of Joining" rules={[{ required: true }]}>
+              <DatePicker style={{ width: "100%" }} />
+            </Form.Item>
+
+            <Form.Item name="reporting_manager" label="Reporting Manager" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+
+            <Form.Item name="employee_type" label="Employee Type" rules={[{ required: true }]}>
+              <Select placeholder="Select Type">
+                <Option value="permanent">Permanent</Option>
+                <Option value="contract">Contract</Option>
+                <Option value="intern">Intern</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item name="status" label="Status" rules={[{ required: true }]}>
+              <Select placeholder="Select Status">
+                <Option value="active">Active</Option>
+                <Option value="inactive">Inactive</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item name="shift_type" label="Shift Type" rules={[{ required: true, message: "Please select a shift type" }]}>
+              <Select placeholder="Select Shift Type">
+                <Option value="day">Day Shift</Option>
+                <Option value="night">Night Shift</Option>
+              </Select>
+            </Form.Item>
+          </div>
+
+          <Form.Item className="flex justify-end gap-2">
+            <Button onClick={() => setAddModalVisible(false)}>Cancel</Button>
+            <Button type="primary" htmlType="submit" loading={loading}>
+              Save
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Edit Employee Modal */}
+      <Modal title="Edit Employee" open={editModalVisible} onCancel={() => setEditModalVisible(false)} footer={null} width={800}>
+        <Form form={editForm} layout="vertical" onFinish={handleEdit}>
+          <Form.Item name="profile_picture" label="Profile Picture">
+            <div className="flex items-center gap-4">
+              <div className="relative rounded-full flex items-center justify-center overflow-hidden bg-gray-100" style={{ width: 64, height: 64 }}>
+                {profileImage ? (
+                  <img src={profileImage} alt="profile" className="w-full h-full object-cover" />
+                ) : (
+                  <UserOutlined style={{ fontSize: 28, color: "#bfbfbf" }} />
+                )}
+
+                {profileImage && (
+                  <div className="absolute inset-0 flex items-center justify-center gap-3 bg-white bg-opacity-40 opacity-0 hover:opacity-100 transition-opacity">
+                    <Upload
+                      beforeUpload={(file) => {
+                        setProfileImage(URL.createObjectURL(file));
+                        editForm.setFieldsValue({ profile_picture: file });
+                        return false;
+                      }}
+                      showUploadList={false}
+                    >
+                      <EditOutlined style={{ fontSize: 18, color: "gray", cursor: "pointer" }} />
+                    </Upload>
+                    <DeleteOutlined
+                      style={{ fontSize: 18, color: "gray", cursor: "pointer" }}
+                      onClick={() => {
+                        setProfileImage(null);
+                        editForm.setFieldsValue({ profile_picture: undefined });
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {!profileImage && (
+                <Upload
+                  beforeUpload={(file) => {
+                    setProfileImage(URL.createObjectURL(file));
+                    editForm.setFieldsValue({ profile_picture: file });
+                    return false;
+                  }}
+                  showUploadList={false}
+                >
+                  <UploadOutlined style={{ fontSize: 22, color: "#1890ff", cursor: "pointer" }} />
+                </Upload>
+              )}
+            </div>
+          </Form.Item>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Form.Item name="employeeId" label="Employee ID" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="attendanceId" label="Attendance ID" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="firstName" label="First Name" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="lastName" label="Last Name" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="dateOfJoining" label="Date of Joining" rules={[{ required: true }]}>
+              <DatePicker style={{ width: "100%" }} />
+            </Form.Item>
+            <Form.Item name="reportingManager" label="Reporting Manager" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="employeeType" label="Employee Type" rules={[{ required: true }]}>
+              <Select placeholder="Select Type">
+                <Option value="permanent">Permanent</Option>
+                <Option value="contract">Contract</Option>
+                <Option value="intern">Intern</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item name="status" label="Status" rules={[{ required: true }]}>
+              <Select placeholder="Select Status">
+                <Option value="active">Active</Option>
+                <Option value="inactive">Inactive</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item name="shiftType" label="Shift Type" rules={[{ required: true, message: "Please select a shift type" }]}>
+              <Select placeholder="Select Shift Type">
+                <Option value="day">Day Shift</Option>
+                <Option value="night">Night Shift</Option>
+              </Select>
+            </Form.Item>
+          </div>
+
+          <Form.Item className="flex justify-end gap-2">
+            <Button onClick={() => setEditModalVisible(false)}>Cancel</Button>
+            <Button type="primary" htmlType="submit" loading={loading}>
+              Update
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
+  );
+};
+
+export default Employee;

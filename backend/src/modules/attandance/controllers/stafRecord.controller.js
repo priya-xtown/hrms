@@ -1,0 +1,441 @@
+// import { sequelize } from "../../../db/index.js";
+
+// export const getAttendanceReport = async (req, res) => {
+//   try {
+//     // Get month/year from query or default to current
+//     const { year, month } = req.query;
+//     const queryYear = year || new Date().getFullYear();
+//     const queryMonth = month || new Date().getMonth() + 1;
+
+//     // Raw SQL query
+//     const [results] = await sequelize.query(`
+//       SET @year := :year;
+//       SET @month := :month;
+
+//       WITH RECURSIVE month_dates AS (
+//   SELECT DATE(CONCAT(:year, '-', LPAD(:month, 2, '0'), '-01')) AS date_val
+//         UNION ALL
+//         SELECT DATE_ADD(date_val, INTERVAL 1 DAY)
+//         FROM month_dates
+//         WHERE MONTH(DATE_ADD(date_val, INTERVAL 1 DAY)) = @month
+//       ),
+//       hrms_employees AS (
+//         SELECT 
+//           e.id AS hrms_emp_id,
+//           e.emp_id,
+//           e.attendance_id,
+//           e.first_name,
+//           ed.departmentId,
+//           dept.department_name,
+//           ed.designationId,
+//           r.role_name AS designation_name,
+//           ed.branchId,
+//           br.branch_name,
+//           b.emp_code AS att_emp_code
+//         FROM hrms.employees AS e
+//         LEFT JOIN hrms.employee_details AS ed ON ed.emp_id = e.id
+//         LEFT JOIN hrms.departments AS dept ON dept.id = ed.departmentId AND dept.is_active = 1
+//         LEFT JOIN hrms.roles AS r ON r.id = ed.designationId AND dept.id = r.department_id AND r.is_active = 1
+//         LEFT JOIN hrms.branches AS br ON br.id = ed.branchId AND br.is_active = 1
+//         LEFT JOIN att.personnel_employee AS b ON e.attendance_id = b.emp_code
+//       ),
+//       tx AS (
+//         SELECT 
+//           emp_code,
+//           DATE(punch_time) AS punch_date,
+//           MIN(punch_time) AS punch_time,
+//           GROUP_CONCAT(DISTINCT punch_state ORDER BY punch_time SEPARATOR ',') AS punch_states
+//         FROM att.iclock_transaction
+//         WHERE YEAR(punch_time) = @year 
+//           AND MONTH(punch_time) = @month
+//         GROUP BY emp_code, DATE(punch_time)
+//       )
+//       SELECT 
+//         h.emp_id,
+//         h.first_name,
+//         h.department_name,
+//         h.designation_name,
+//         h.branch_name,
+//         d.date_val AS punch_date,
+//         tx.punch_time,
+//         CASE 
+//           WHEN tx.punch_time IS NOT NULL THEN 'PRESENT'
+//           ELSE 'ABSENT'
+//         END AS status,
+//         tx.punch_states AS punch_state
+//       FROM hrms_employees AS h
+//       CROSS JOIN month_dates AS d
+//       LEFT JOIN tx
+//         ON tx.emp_code = h.att_emp_code
+//         AND tx.punch_date = d.date_val
+//       ORDER BY h.emp_id, d.date_val;
+//     `, {
+//       replacements: { year: queryYear, month: queryMonth },
+//       type: sequelize.QueryTypes.SELECT,
+//       multipleStatements: true // ✅ Needed for SET + WITH
+//     });
+
+//     res.status(200).json({
+//       message: "Attendance report fetched successfully",
+//       year: queryYear,
+//       month: queryMonth,
+//       data: results
+//     });
+
+//   } catch (error) {
+//     console.error("Error fetching attendance report:", error);
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
+
+
+import { Op, fn, col, literal } from "sequelize";
+// import { sequelize } from "../../../db/index.js";
+import Employee from "../../employee/models/employee.model.js";
+import EmployeeDetail from "../../employee/models/employeeDetails.model.js";
+import Department from "../../employee/models/department.model.js";
+import Role from "../../employee/models/role.model.js";
+import Branch from "../../employee/models/branch.model.js";
+import PersonnelEmployee from "../models/personnel_employee.models.js";
+import IclockTransaction from "../../attandance/models/iclocktransaction.models.js";
+
+export const getAttendanceReport = async (req, res) => {
+  try {
+    const { year, month } = req.query;
+    const queryYear = year || new Date().getFullYear();
+    const queryMonth = month || new Date().getMonth() + 1;
+
+    // ✅ Generate all days for the month in JS
+    const daysInMonth = new Date(queryYear, queryMonth, 0).getDate();
+    const dateList = Array.from({ length: daysInMonth }, (_, i) =>
+      new Date(queryYear, queryMonth - 1, i + 1).toISOString().split("T")[0]
+    );
+
+    // ✅ Fetch employee + department + branch + designation info
+    const employees = await Employee.findAll({
+      attributes: ["id", "emp_id", "attendance_id", "first_name"],
+      include: [
+        {
+          model: EmployeeDetail,
+          as: "details",
+          attributes: ["departmentId", "designationId", "branchId"],
+          include: [
+            {
+              model: Department,
+              as: "department",
+              attributes: ["department_name"],
+              where: { is_active: 1 },
+              required: false
+            },
+            {
+              model: Role,
+              as: "designation",
+              attributes: ["role_name"],
+              where: { is_active: 1 },
+              required: false
+            },
+            {
+              model: Branch,
+              as: "branch",
+              attributes: ["branch_name"],
+              where: { is_active: 1 },
+              required: false
+            }
+          ]
+        },
+        {
+          model: PersonnelEmployee,
+          as: "attendance",
+          attributes: ["emp_code"],
+          required: false
+        }
+      ]
+    });
+
+    // ✅ Fetch attendance logs for the month
+    const transactions = await IclockTransaction.findAll({
+      attributes: [
+        "emp_code",
+        [fn("DATE", col("punch_time")), "punch_date"],
+        [fn("MIN", col("punch_time")), "first_punch_time"],
+        [
+          fn("GROUP_CONCAT", literal("DISTINCT punch_state ORDER BY punch_time SEPARATOR ','")),
+          "punch_states"
+        ]
+      ],
+      where: {
+        punch_time: {
+          [Op.between]: [
+            new Date(queryYear, queryMonth - 1, 1),
+            new Date(queryYear, queryMonth, 0, 23, 59, 59)
+          ]
+        }
+      },
+      group: ["emp_code", literal("DATE(punch_time)")]
+    });
+
+    // Convert transactions to quick lookup
+    const txMap = {};
+    for (const tx of transactions) {
+      const data = tx.get({ plain: true });
+      if (!txMap[data.emp_code]) txMap[data.emp_code] = {};
+      txMap[data.emp_code][data.punch_date] = data;
+    }
+
+    // ✅ Construct attendance matrix
+    const report = [];
+    for (const emp of employees) {
+      const e = emp.get({ plain: true });
+      const empCode = e.attendance?.emp_code;
+      const dept = e.details?.department?.department_name || null;
+      const desg = e.details?.designation?.role_name || null;
+      const branch = e.details?.branch?.branch_name || null;
+
+      for (const date of dateList) {
+        const tx = empCode && txMap[empCode]?.[date];
+        report.push({
+          emp_id: e.emp_id,
+          first_name: e.first_name,
+          department_name: dept,
+          designation_name: desg,
+          branch_name: branch,
+          punch_date: date,
+          punch_time: tx?.first_punch_time || null,
+          punch_state: tx?.punch_states || null,
+          status: tx ? "PRESENT" : "ABSENT"
+        });
+      }
+    }
+
+    res.status(200).json({
+      message: "Attendance report fetched successfully",
+      year: queryYear,
+      month: queryMonth,
+      data: report
+    });
+  } catch (error) {
+    console.error("Error fetching attendance report:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+
+// -- ✅ Set your dynamic month and year
+// SET @year := 2025;
+// SET @month := 10;
+
+// WITH RECURSIVE month_dates AS (
+//   SELECT DATE(CONCAT(@year, '-', LPAD(@month, 2, '0'), '-01')) AS date_val
+//   UNION ALL
+//   SELECT DATE_ADD(date_val, INTERVAL 1 DAY)
+//   FROM month_dates
+//   WHERE MONTH(DATE_ADD(date_val, INTERVAL 1 DAY)) = @month
+// ),
+
+// -- 🔹 1️⃣ HRMS employee master with attendance mapping
+// hrms_employees AS (
+//   SELECT 
+//     e.id AS hrms_emp_id,
+//     e.emp_id,
+//     e.attendance_id,
+//     e.first_name,
+//     ed.departmentId,
+//     dept.department_name,
+//     ed.designationId,
+//     r.role_name AS designation_name,
+//     ed.branchId,
+//     br.branch_name,
+//     b.emp_code AS att_emp_code
+//   FROM hrms.employees AS e
+//   LEFT JOIN hrms.employee_details AS ed ON ed.emp_id = e.id
+//   LEFT JOIN hrms.departments AS dept ON dept.id = ed.departmentId AND dept.is_active = 1
+//   LEFT JOIN hrms.roles AS r ON r.id = ed.designationId AND dept.id = r.department_id AND r.is_active = 1
+//   LEFT JOIN hrms.branches AS br ON br.id = ed.branchId AND br.is_active = 1
+//   LEFT JOIN att.personnel_employee AS b 
+//     ON e.attendance_id = b.emp_code
+// ),
+
+// -- 🔹 2️⃣ Attendance punches from ATT DB
+// daily_tx AS (
+//   SELECT 
+//     emp_code,
+//     DATE(punch_time) AS work_date,
+//     MIN(punch_time) AS time_in,
+//     MAX(punch_time) AS time_out,
+//     TIMEDIFF(MAX(punch_time), MIN(punch_time)) AS worked_duration,
+//     ROUND(TIMESTAMPDIFF(MINUTE, MIN(punch_time), MAX(punch_time)) / 60, 2) AS total_worked_hours,
+//     CASE 
+//       WHEN TIMESTAMPDIFF(HOUR, MIN(punch_time), MAX(punch_time)) > 8 THEN 'Yes'
+//       ELSE 'No'
+//     END AS extra,
+//     CASE 
+//       WHEN TIMESTAMPDIFF(HOUR, MIN(punch_time), MAX(punch_time)) > 8 
+//       THEN TIMESTAMPDIFF(HOUR, MIN(punch_time), MAX(punch_time)) - 8
+//       ELSE 0
+//     END AS overtime_hours
+//   FROM att.iclock_transaction
+//   WHERE YEAR(punch_time) = @year AND MONTH(punch_time) = @month
+//   GROUP BY emp_code, DATE(punch_time)
+// ),
+
+// -- 🔹 3️⃣ Combine HRMS + Dates + Attendance
+// combined AS (
+//   SELECT 
+//     h.emp_id,
+//     h.first_name,
+//     h.department_name,
+//     h.designation_name,
+//     h.branch_name,
+//     d.date_val AS attendance_date,
+//     t.time_in,
+//     t.time_out,
+//     t.total_worked_hours,
+//     t.overtime_hours,
+//     CASE 
+//       WHEN t.time_in IS NOT NULL THEN 'PRESENT'
+//       ELSE 'ABSENT'
+//     END AS status
+//   FROM hrms_employees AS h
+//   CROSS JOIN month_dates AS d
+//   LEFT JOIN daily_tx AS t
+//     ON t.emp_code = h.att_emp_code
+//     AND t.work_date = d.date_val
+// )
+
+// -- 🔹 4️⃣ Final summary output per employee
+// SELECT 
+//   emp_id,
+//   first_name,
+//   department_name,
+//   designation_name,
+//   branch_name,
+//   COUNT(CASE WHEN status = 'PRESENT' THEN 1 END) AS PresentDays,
+//   COUNT(CASE WHEN status = 'ABSENT' THEN 1 END) AS AbsentDays,
+//   COUNT(CASE WHEN status LIKE '%L%' THEN 1 END) AS LeaveDays,
+//   ROUND(SUM(COALESCE(total_worked_hours,0)), 2) AS TotalWorkedHours,
+//   ROUND(SUM(COALESCE(overtime_hours,0)), 2) AS TotalOvertimeHours
+// FROM combined
+// GROUP BY emp_id, first_name, department_name, designation_name, branch_name
+// ORDER BY emp_id;
+
+
+export const getAttendanceSummary = async (req, res) => {
+  try {
+    const { year, month } = req.query;
+    const queryYear = parseInt(year) || new Date().getFullYear();
+    const queryMonth = parseInt(month) || new Date().getMonth() + 1;
+
+    // ✅ Generate all dates for that month
+    const daysInMonth = new Date(queryYear, queryMonth, 0).getDate();
+    const monthDates = Array.from({ length: daysInMonth }, (_, i) =>
+      new Date(queryYear, queryMonth - 1, i + 1).toISOString().split("T")[0]
+    );
+
+    // ✅ 1️⃣ Fetch all HRMS employees + related details
+    const employees = await Employee.findAll({
+      attributes: ["id", "emp_id", "attendance_id", "first_name"],
+      include: [
+        {
+          model: EmployeeDetail,
+          as: "details",
+          attributes: ["departmentId", "designationId", "branchId"],
+          include: [
+            { model: Department, as: "department", attributes: ["department_name"], where: { is_active: 1 }, required: false },
+            { model: Role, as: "designation", attributes: ["role_name"], where: { is_active: 1 }, required: false },
+            { model: Branch, as: "branch", attributes: ["branch_name"], where: { is_active: 1 }, required: false },
+          ]
+        },
+        {
+          model: PersonnelEmployee,
+          as: "attendance",
+          attributes: ["emp_code"],
+          required: false,
+        }
+      ]
+    });
+
+    // ✅ 2️⃣ Fetch attendance transactions for the given month
+    const startDate = new Date(queryYear, queryMonth - 1, 1);
+    const endDate = new Date(queryYear, queryMonth, 0, 23, 59, 59);
+
+    const txRows = await IclockTransaction.findAll({
+      attributes: [
+        "emp_code",
+        [fn("DATE", col("punch_time")), "work_date"],
+        [fn("MIN", col("punch_time")), "time_in"],
+        [fn("MAX", col("punch_time")), "time_out"],
+        [
+          literal("ROUND(TIMESTAMPDIFF(MINUTE, MIN(punch_time), MAX(punch_time)) / 60, 2)"),
+          "total_worked_hours"
+        ],
+      ],
+      where: {
+        punch_time: { [Op.between]: [startDate, endDate] },
+      },
+      group: ["emp_code", literal("DATE(punch_time)")],
+      raw: true,
+    });
+
+    // ✅ Create quick lookup: txMap[emp_code][date] = {time_in, time_out, worked_hours}
+    const txMap = {};
+    for (const tx of txRows) {
+      const { emp_code, work_date } = tx;
+      if (!txMap[emp_code]) txMap[emp_code] = {};
+      txMap[emp_code][work_date] = tx;
+    }
+
+    // ✅ 3️⃣ Combine HRMS employees + month dates + attendance
+    const summaries = [];
+
+    for (const emp of employees) {
+      const e = emp.get({ plain: true });
+      const empCode = e.attendance?.emp_code;
+      const dept = e.details?.department?.department_name || null;
+      const desg = e.details?.designation?.role_name || null;
+      const branch = e.details?.branch?.branch_name || null;
+
+      let presentDays = 0;
+      let absentDays = 0;
+      let totalWorked = 0;
+      let totalOvertime = 0;
+
+      for (const date of monthDates) {
+        const tx = empCode && txMap[empCode]?.[date];
+        if (tx) {
+          presentDays++;
+          const worked = parseFloat(tx.total_worked_hours) || 0;
+          totalWorked += worked;
+          totalOvertime += worked > 8 ? worked - 8 : 0;
+        } else {
+          absentDays++;
+        }
+      }
+
+      summaries.push({
+        emp_id: e.emp_id,
+        first_name: e.first_name,
+        department_name: dept,
+        designation_name: desg,
+        branch_name: branch,
+        PresentDays: presentDays,
+        AbsentDays: absentDays,
+        LeaveDays: 0, // optional future logic for leave integration
+        TotalWorkedHours: totalWorked.toFixed(2),
+        TotalOvertimeHours: totalOvertime.toFixed(2),
+      });
+    }
+
+    // ✅ 4️⃣ Send summary response
+    res.status(200).json({
+      message: "Attendance summary fetched successfully",
+      year: queryYear,
+      month: queryMonth,
+      data: summaries,
+    });
+
+  } catch (error) {
+    console.error("❌ Error fetching attendance summary:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+

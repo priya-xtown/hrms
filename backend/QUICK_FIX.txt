@@ -1,0 +1,40 @@
+═══════════════════════════════════════════════════════════
+  QUICK FIX FOR SHIFT TABLE ERRORS
+═══════════════════════════════════════════════════════════
+
+PROBLEM: "Unknown column 'shift_type' in 'field list'"
+
+SOLUTION: Run this command in the backend folder:
+
+  node sync-shift-model.js
+
+Then restart your backend server.
+
+═══════════════════════════════════════════════════════════
+
+STEP BY STEP:
+
+1. Open terminal in: backendnew/backend
+
+2. Stop your backend server (Ctrl+C if running)
+
+3. Run: node sync-shift-model.js
+
+4. Wait for "✅ Shift table synced successfully!"
+
+5. Start backend: npm start
+
+6. Test in frontend - should work now!
+
+═══════════════════════════════════════════════════════════
+
+ALTERNATIVE (if above doesn't work):
+
+Run this SQL in your database:
+
+ALTER TABLE shifts 
+  ADD COLUMN shift_type VARCHAR(255) NULL,
+  ADD COLUMN is_night_shift BOOLEAN DEFAULT false,
+  ADD COLUMN status ENUM('active','inactive') DEFAULT 'active';
+
+═══════════════════════════════════════════════════════════

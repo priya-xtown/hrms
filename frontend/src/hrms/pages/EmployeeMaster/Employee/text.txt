@@ -1,0 +1,613 @@
+  // const handleSave = async () => {
+  //   try {
+  //     const values = await form.validateFields();
+
+  //     const formatDate = (date) => (date ? dayjs(date).format("YYYY-MM-DD") : null);
+  //     const normalize = (val) =>
+  //       val === null || val === undefined || val === "" ? null : String(val).trim();
+
+  //     const employeeId = id;  // Now safe to use
+
+  //     const formData = new FormData();
+  //     formData.append("employee_id", employeeId);
+  //     // if (isEditMode) {
+
+  //     //   formData.append("id", employeeId);
+  //     //   formData.append("employee_code", normalize(values.employeeId) || "");
+  //     // }
+
+  //     // ==========================
+  //     // 📌 DETAILS PAYLOAD
+  //     // ==========================
+  //     const details = {
+  //       employee_code: normalize(values.emp_id) || "",
+  //       attendance_id: normalize(values.attendanceId),
+  //       first_name: normalize(values.firstName),
+  //       last_name: normalize(values.lastName),
+  //       reporting_manager: normalize(values.reportingManager),
+  //       employee_type: normalize(values.employeeType),
+  //       status: normalize(values.status),
+  //       shift_type: normalize(values.shiftType),
+  //       department_id: normalize(values.department),
+  //       designation_id: normalize(values.designation),
+  //       branch_id: normalize(values.branch_id),
+  //       joining_date: formatDate(values.joiningDate),
+  //       dob: formatDate(values.dob),
+  //       gender:
+  //         values.gender === "male"
+  //           ? "Male"
+  //           : values.gender === "female"
+  //           ? "Female"
+  //           : "Other",
+  //       marital_status: values.maritalStatus === "single" ? "UnMarried" : "Married",
+  //       blood_group: normalize(values.bloodGroup),
+  //       nationality: normalize(values.nationality),
+  //       permanent_address: normalize(values.permanentAddress),
+  //       current_address: normalize(values.currentAddress),
+  //       city: normalize(values.city),
+  //       state: normalize(values.state),
+  //       zip_code: normalize(values.pinCode),
+  //       email: normalize(values.email),
+  //       mobile_number: normalize(values.mobileNumber),
+  //       aadhar_number: normalize(values.aadhaar),
+  //       pan_number: normalize(values.panNumber),
+  //       pf_number: normalize(values.pf),
+  //       tax_no: normalize(values.tax),
+  //       bank_name: normalize(values.bankName),
+  //       bank_account_number: normalize(values.account_no),
+  //       ifsc_code: (values.ifsc_code || "").toUpperCase().trim(),
+  //       branch_name: normalize(values.branchName),
+  //       qualification: normalize(values.qualification),
+  //       specialization: normalize(values.specialization),
+  //       institution_name: normalize(values.institution),
+  //       university_name: normalize(values.university),
+  //       edu_start_date: formatDate(values.educationStartDate),
+  //       edu_end_date: formatDate(values.educationEndDate),
+  //       percentage: values.percentage,
+  //       certifications: normalize(values.additionalCourses),
+  //       company_name: normalize(values.companyName),
+  //       previous_designation: normalize(values.expDesignation),
+  //       previous_department: normalize(values.expDepartment),
+  //       exp_start_date: formatDate(values.experienceStartDate),
+  //       exp_end_date: formatDate(values.experienceEndDate),
+  //       exp_location: normalize(values.location),
+  //       responsibilities: normalize(values.achievements),
+  //       basic_salary: Number(values.basicSalary) || 0,
+  //       allowance: Number(values.allowanceType) || 0,
+  //       bonus: Number(values["bonus/incentives"]) || 0,
+  //       deductions: Number(values.deductions) || 0,
+  //       net_salary: Number(values["net salary"]) || 0,
+  //       asset_type: normalize(values.assetType),
+  //       model: normalize(values.assetId),
+  //       issued_date: formatDate(values.assetIssuedDate),
+  //       return_date: formatDate(values.assetReturnDate),
+  //     };
+  //     details.employee_id = employeeId;
+  //     // if (isEditMode) {
+
+  //     // }
+
+  //     formData.append("details", JSON.stringify(details));
+
+  //     // ==========================
+  //     // 📌 EMERGENCY CONTACTS
+  //     // ==========================
+  //     const emergency = (values.emergencyContacts || []).map((c) => ({
+  //       emergency_contact_name: normalize(c.contactName),
+  //       emergency_contact_phone: normalize(c.phoneNumber),
+  //       emergency_contact_relation: normalize(c.relationship),
+  //       emergency_contact_address: normalize(c.address),
+  //     }));
+  //     formData.append("emergency", JSON.stringify(emergency));
+
+  //     // ==========================
+  //     // 📎 FILE UPLOADS
+  //     // ==========================
+  //     const appendFile = (key, field) => {
+  //       const file = values[field]?.originFileObj || values[field];
+  //       if (file instanceof File) formData.append(key, file);
+  //     };
+
+  //     appendFile("profile_picture", "profile_picture_file");
+  //     appendFile("resume", "resumeUpload");
+  //     appendFile("aadhar", "aadharUpload");
+  //     appendFile("pan", "panUpload");
+  //     appendFile("degree", "degreeUpload");
+  //     appendFile("marksheet", "marksheetUpload");
+  //     appendFile("relieving", "relievingUpload");
+  //     appendFile("experience", "experienceUpload");
+  //     appendFile("offer", "offerLetterUpload");
+  //     appendFile("passport", "passportUpload");
+  //     appendFile("driving", "drivingLicenseUpload");
+  //     appendFile("addressproof", "addressProofUpload");
+  //     appendFile("bankproof", "bankProofUpload");
+
+  //     // ==========================
+  //     // 🚀 MAKE REQUEST
+  //     // ==========================
+
+  //      await EmployeePersonalApi.add(formData);
+  //       message.success("Employee added successfully!");
+
+  //     // if (!isEditMode) {
+  //     //   await EmployeePersonalApi.add(formData);
+  //     //   message.success("Employee added successfully!");
+  //     // } else {
+  //     //   await EmployeePersonalApi.update(employeeId, formData);
+  //     //   message.success("Employee updated successfully!");
+  //     // }
+
+  //     navigate("/employees");
+
+  //   } catch (err) {
+  //     console.error("Save error:", err);
+  //     message.error(err.response?.data?.message || "Failed to save employee");
+  //   }
+  // };
+  // const handleSave = async () => {
+  //   try {
+  //     const values = await form.validateFields();
+
+  //     const formatDate = (d) => (d ? dayjs(d).format("YYYY-MM-DD") : null);
+  //     const normalize = (v) => (v === null || v === undefined || v === "" ? "" : String(v).trim());
+
+  //     const employeeId = id; // undefined for new
+
+  //     // Build the details object (same as you already have)
+  //     const details = {
+  //       employee_code: normalize(values.employeeId),
+  //       attendance_id: normalize(values.attendanceId),
+  //       first_name: normalize(values.firstName),
+  //       last_name: normalize(values.lastName),
+  //       reporting_manager: normalize(values.reportingManager),
+  //       employee_type: normalize(values.employeeType),
+  //       status: normalize(values.status),
+  //       shift_type: normalize(values.shiftType),
+  //       department_id: normalize(values.department),
+  //       designation_id: normalize(values.designation),
+  //       branch_id: normalize(values.branch_id),
+  //       joining_date: formatDate(values.joiningDate),
+  //       dob: formatDate(values.dob),
+  //       gender:
+  //         values.gender === "male" ? "Male" : values.gender === "female" ? "Female" : "Other",
+  //       marital_status: values.maritalStatus === "single" ? "UnMarried" : "Married",
+  //       blood_group: normalize(values.bloodGroup),
+  //       nationality: normalize(values.nationality),
+  //       permanent_address: normalize(values.permanentAddress),
+  //       current_address: normalize(values.currentAddress),
+  //       city: normalize(values.city),
+  //       state: normalize(values.state),
+  //       zip_code: normalize(values.pinCode),
+  //       email: normalize(values.email),
+  //       mobile_number: normalize(values.mobileNumber),
+  //       aadhar_number: normalize(values.aadhaar),
+  //       pan_number: normalize(values.panNumber),
+  //       pf_number: normalize(values.pf),
+  //       tax_no: normalize(values.tax),
+  //       bank_name: normalize(values.bankName),
+  //       bank_account_number: normalize(values.account_no),
+  //       ifsc_code: (values.ifsc_code || "").toUpperCase().trim(),
+  //       branch_name: normalize(values.branchName),
+  //       qualification: normalize(values.qualification),
+  //       specialization: normalize(values.specialization),
+  //       institution_name: normalize(values.institution),
+  //       university_name: normalize(values.university),
+  //       edu_start_date: formatDate(values.educationStartDate),
+  //       edu_end_date: formatDate(values.educationEndDate),
+  //       percentage: values.percentage ?? "",
+  //       certifications: normalize(values.additionalCourses),
+  //       company_name: normalize(values.companyName),
+  //       previous_designation: normalize(values.expDesignation),
+  //       previous_department: normalize(values.expDepartment),
+  //       exp_start_date: formatDate(values.experienceStartDate),
+  //       exp_end_date: formatDate(values.experienceEndDate),
+  //       exp_location: normalize(values.location),
+  //       responsibilities: normalize(values.achievements),
+  //       basic_salary: values.basicSalary ?? "",
+  //       allowance: values.allowanceType ?? "",
+  //       bonus: values["bonus/incentives"] ?? "",
+  //       deductions: values.deductions ?? "",
+  //       net_salary: values["net salary"] ?? "",
+  //       asset_type: normalize(values.assetType),
+  //       model: normalize(values.assetId),
+  //       issued_date: formatDate(values.assetIssuedDate),
+  //       return_date: formatDate(values.assetReturnDate),
+  //     };
+  //     // inside handleSave after building formData
+  //     if (employeeId) {
+  //       // include the real id if backend expects `id`
+  //       formData.append("id", employeeId);
+  //       formData.append("_method", "PUT"); // method override
+  //       // call the POST endpoint (same as create) — server should treat as update
+  //       const resp = await EmployeePersonalApi.add(formData);
+  //       console.log("Update response (via POST + _method):", resp);
+  //       message.success("Employee updated successfully!");
+  //     } else {
+  //       const resp = await EmployeePersonalApi.add(formData);
+  //       console.log("Create response:", resp);
+  //       message.success("Employee added successfully!");
+  //     }
+
+  //     // Files mapping
+  //     const filePairs = [
+  //       ["profile_picture_file", "profile_picture"],
+  //       ["resumeUpload", "resume"],
+  //       ["aadharUpload", "aadhar"],
+  //       ["panUpload", "pan"],
+  //       ["degreeUpload", "degree"],
+  //       ["marksheetUpload", "marksheet"],
+  //       ["relievingUpload", "relieving"],
+  //       ["experienceUpload", "experience"],
+  //       ["offerLetterUpload", "offer"],
+  //       ["passportUpload", "passport"],
+  //       ["drivingLicenseUpload", "driving"],
+  //       ["addressProofUpload", "addressproof"],
+  //       ["bankProofUpload", "bankproof"],
+  //     ];
+
+  //     const formData = new FormData();
+
+  //     // IMPORTANT CHANGE: append details as TOP-LEVEL form fields (not "details" JSON)
+  //     Object.entries(details).forEach(([k, v]) => {
+  //       // convert null/undefined -> empty string (safer for many backends)
+  //       formData.append(k, v === undefined || v === null ? "" : String(v));
+  //     });
+
+  //     // emergency as JSON string (keep this if backend accepts it)
+  //     formData.append("emergency", JSON.stringify(emergency));
+
+  //     // append files (if provided)
+  //     filePairs.forEach(([fieldName, docKey]) => {
+  //       const val = values[fieldName];
+  //       if (!val) return;
+  //       if (val instanceof File) {
+  //         formData.append(docKey, val);
+  //       } else if (val && val.originFileObj instanceof File) {
+  //         formData.append(docKey, val.originFileObj);
+  //       } else if (Array.isArray(val) && val[0] && val[0].originFileObj instanceof File) {
+  //         formData.append(docKey, val[0].originFileObj);
+  //       } else if (typeof val === "string" && val.trim()) {
+  //         // existing URL - include so backend can keep it
+  //         formData.append(`${docKey}_url`, val);
+  //       }
+  //     });
+
+  //     // debug: inspect what's being sent (remove in production)
+  //     for (const pair of formData.entries()) {
+  //       console.log("formData:", pair[0], pair[1]);
+  //     }
+
+  //     // fallback: many servers reject PUT+multipart, so include _method=PUT when editing
+  //     if (employeeId) {
+  //       formData.append("_method", "PUT");
+  //       // Call update (API helper should attempt PUT then POST fallback)
+  //       await EmployeePersonalApi.update(employeeId, formData);
+  //       message.success("Employee updated successfully!");
+  //     } else {
+  //       await EmployeePersonalApi.add(formData);
+  //       message.success("Employee added successfully!");
+  //     }
+
+  //     navigate("/employees");
+  //   } catch (err) {
+  //     console.error("Save error:", err);
+  //     message.error(err?.response?.data?.message || err?.message || "Failed to save employee");
+  //   }
+  // };
+
+  // const handleSave = async () => {
+  //   try {
+  //     // validate + get values
+  //     const values = await form.validateFields();
+
+  //     const formatDate = (d) => (d ? dayjs(d).format("YYYY-MM-DD") : null);
+  //     const normalize = (v) =>
+  //       v === null || v === undefined || v === "" ? "" : String(v).trim();
+
+  //     const employeeId = id; // undefined for create
+
+  //     // Build details object using keys similar to backend (see your API response)
+  //     const details = {
+  //       employee_id: employeeId || "", // backend will associate this when updating
+  //       employee_code: normalize(values.employeeId),
+  //       attendance_id: normalize(values.attendanceId),
+  //       dob: formatDate(values.dob),
+  //       gender:
+  //         values.gender === "male" ? "Male" : values.gender === "female" ? "Female" : "Other",
+  //       marital_status: values.maritalStatus === "single" ? "UnMarried" : "Married",
+  //       blood_group: normalize(values.bloodGroup),
+  //       nationality: normalize(values.nationality),
+  //       permanent_address: normalize(values.permanentAddress),
+  //       current_address: normalize(values.currentAddress),
+  //       city: normalize(values.city),
+  //       state: normalize(values.state),
+  //       zip_code: normalize(values.pinCode),
+  //       mobile_number: normalize(values.mobileNumber),
+  //       email: normalize(values.email),
+  //       departmentId: normalize(values.department),
+  //       designationId: normalize(values.designation),
+  //       branchId: normalize(values.branch_id),
+  //       joining_date: formatDate(values.joiningDate),
+  //       basic_salary: values.basicSalary ?? "",
+  //       allowance: values.allowanceType ?? "",
+  //       bonus: values["bonus/incentives"] ?? "",
+  //       deductions: values.deductions ?? "",
+  //       net_salary: values["net salary"] ?? "",
+  //       bank_name: normalize(values.bankName),
+  //       bank_account_number: normalize(values.account_no),
+  //       ifsc_code: (values.ifsc_code || "").toUpperCase().trim(),
+  //       branch_name: normalize(values.branchName),
+  //       pan_number: normalize(values.panNumber),
+  //       aadhar_number: normalize(values.aadhaar),
+  //       pf_number: normalize(values.pf),
+  //       tax_no: normalize(values.tax),
+  //       qualification: normalize(values.qualification),
+  //       specialization: normalize(values.specialization),
+  //       institution_name: normalize(values.institution),
+  //       university_name: normalize(values.university),
+  //       edu_start_date: formatDate(values.educationStartDate),
+  //       edu_end_date: formatDate(values.educationEndDate),
+  //       percentage: values.percentage ?? "",
+  //       certifications: normalize(values.additionalCourses),
+  //       company_name: normalize(values.companyName),
+  //       previous_designation: normalize(values.expDesignation),
+  //       previous_department: normalize(values.expDepartment),
+  //       exp_start_date: formatDate(values.experienceStartDate),
+  //       exp_end_date: formatDate(values.experienceEndDate),
+  //       exp_location: normalize(values.location),
+  //       responsibilities: normalize(values.achievements),
+  //       asset_type: normalize(values.assetType),
+  //       model: normalize(values.assetId),
+  //       issued_date: formatDate(values.assetIssuedDate),
+  //       return_date: formatDate(values.assetReturnDate),
+  //     };
+
+  //     // emergency contacts -> backend expects array (your response uses "emergencies")
+  //     const emergency = (values.emergencyContacts || []).map((c) => ({
+  //       emergency_contact_name: normalize(c.contactName),
+  //       emergency_contact_phone: normalize(c.phoneNumber),
+  //       emergency_contact_relation: normalize(c.relationship),
+  //       emergency_contact_address: normalize(c.address),
+  //     }));
+
+  //     // files mapping (form fields -> backend doc keys)
+  //     const filePairs = [
+  //       ["profile_picture_file", "profile_picture"],
+  //       ["resumeUpload", "resume"],
+  //       ["aadharUpload", "aadhar"],
+  //       ["panUpload", "pan"],
+  //       ["degreeUpload", "degree"],
+  //       ["marksheetUpload", "marksheet"],
+  //       ["relievingUpload", "relieving"],
+  //       ["experienceUpload", "experience"],
+  //       ["offerLetterUpload", "offer"],
+  //       ["passportUpload", "passport"],
+  //       ["drivingLicenseUpload", "driving"],
+  //       ["addressProofUpload", "addressproof"],
+  //       ["bankProofUpload", "bankproof"],
+  //     ];
+
+  //     // ===== create formData (must create BEFORE appending) =====
+  //     const formData = new FormData();
+
+  //     // Important: many backends that create a separate "details" record expect
+  //     // the details as a JSON string under the key "details".
+  //     // Your original response shows a nested details object, so we send it that way.
+  //     formData.append("details", JSON.stringify(details));
+
+  //     // emergencies: send as JSON string (backend can parse)
+  //     formData.append("emergencies", JSON.stringify(emergency));
+
+  //     // Append files (if selected)
+  //     filePairs.forEach(([fieldName, docKey]) => {
+  //       const val = values[fieldName];
+  //       if (!val) return;
+  //       if (val instanceof File) {
+  //         formData.append(docKey, val);
+  //       } else if (val && val.originFileObj instanceof File) {
+  //         formData.append(docKey, val.originFileObj);
+  //       } else if (Array.isArray(val) && val[0] && val[0].originFileObj instanceof File) {
+  //         formData.append(docKey, val[0].originFileObj);
+  //       } else if (typeof val === "string" && val.trim()) {
+  //         // Preserve existing URL (so backend can keep it)
+  //         formData.append(`${docKey}_url`, val);
+  //       }
+  //     });
+
+  //     // debug listing (keeps keys only, not full file content)
+  //     for (const pair of formData.entries()) {
+  //       console.log("formData entry:", pair[0], pair[1]);
+  //     }
+
+  //     // ===== perform request: prefer using update() but add method-override fallback =====
+  //     if (employeeId) {
+  //       // include id so backend knows which employee (some backends require it in payload)
+  //       formData.append("employee_id", employeeId);
+
+  //       // add method override (many servers use this for multipart updates)
+  //       formData.append("_method", "PUT");
+
+  //       // Try update endpoint first (recommended). If your API.update sends PUT and
+  //       // the server supports multipart PUT then this will work.
+  //       try {
+  //         await EmployeePersonalApi.update(employeeId, formData);
+  //         message.success("Employee updated successfully!");
+  //       } catch (err) {
+  //         console.warn("Update via update() failed, trying POST fallback with _method=PUT", err);
+
+  //         // Fallback: POST to update endpoint using method override.
+  //         // This requires EmployeePersonalApi.add to POST to `/employees/:id` or
+  //         // you can add an explicit fallback call into your API helper.
+  //         // We'll try a robust fallback that many backends accept: POST to /employees/:id?_method=PUT
+  //         try {
+  //           // If EmployeePersonalApi has a helper to POST to a specific URL, use it.
+  //           // Otherwise attempt EmployeePersonalApi.add(formData) as final fallback.
+  //           if (typeof EmployeePersonalApi.postToId === "function") {
+  //             await EmployeePersonalApi.postToId(employeeId, formData); // optional helper
+  //           } else {
+  //             // final fallback - try calling add() (modify API helper if necessary)
+  //             await EmployeePersonalApi.add(formData);
+  //           }
+  //           message.success("Employee updated (fallback)!");
+  //         } catch (err2) {
+  //           console.error("Fallback update also failed:", err2);
+  //           throw err2; // send to outer catch
+  //         }
+  //       }
+  //     } else {
+  //       // create
+  //       await EmployeePersonalApi.add(formData);
+  //       message.success("Employee added successfully!");
+  //     }
+
+  //     navigate("/employees");
+  //   } catch (err) {
+  //     console.error("Save error:", err, err?.response?.data);
+  //     message.error(err?.response?.data?.message || err?.message || "Failed to save employee");
+  //   }
+  // };
+  // const handleSave = async () => {
+  //   try {
+  //     const values = await form.validateFields();
+
+  //     const formatDate = (d) => (d ? dayjs(d).format("YYYY-MM-DD") : "");
+  //     const normalize = (v) => (v === null || v === undefined || v === "" ? "" : String(v).trim());
+
+  //     const formData = new FormData();
+
+  //     // Append all scalar fields directly (backend expects flat structure)
+  //     const details = {
+  //       // Basic
+  //       emp_id: normalize(values.employeeId),
+  //       attendance_id: normalize(values.attendanceId),
+  //       first_name: normalize(values.firstName),
+  //       last_name: normalize(values.lastName),
+  //       date_of_joining: formatDate(values.dateOfJoining || values.joiningDate),
+  //       reporting_manager: normalize(values.reportingManager),
+  //       employee_type: normalize(values.employeeType),
+  //       status: normalize(values.status),
+  //       shift_type: normalize(values.shiftType),
+
+  //       // Personal & Contact
+  //       dob: formatDate(values.dob),
+  //       gender: values.gender === "male" ? "Male" : values.gender === "female" ? "Female" : "Other",
+  //       marital_status: values.maritalStatus === "married" ? "Married" : "UnMarried",
+  //       blood_group: normalize(values.bloodGroup),
+  //       nationality: normalize(values.nationality),
+  //       permanent_address: normalize(values.permanentAddress),
+  //       current_address: normalize(values.currentAddress),
+  //       city: normalize(values.city),
+  //       state: normalize(values.state),
+  //       zip_code: normalize(values.pinCode),
+  //       mobile_number: normalize(values.mobileNumber),
+  //       email: normalize(values.email),
+
+  //       // Job
+  //       department_id: normalize(values.department),
+  //       designation_id: normalize(values.designation),
+  //       branch_id: normalize(values.branch_id),
+
+  //       // Government, Bank, Education, Experience, Payroll, Asset...
+  //       aadhar_number: normalize(values.aadhaar),
+  //       pan_number: normalize(values.panNumber),
+  //       pf_number: normalize(values.pf),
+  //       tax_no: normalize(values.tax),
+  //       bank_name: normalize(values.bankName),
+  //       bank_account_number: normalize(values.account_no),
+  //       ifsc_code: normalize(values.ifsc_code)?.toUpperCase(),
+  //       branch_name: normalize(values.branchName),
+
+  //       qualification: normalize(values.qualification),
+  //       specialization: normalize(values.specialization),
+  //       university_name: normalize(values.university),
+  //       institution_name: normalize(values.institution),
+  //       edu_start_date: formatDate(values.educationStartDate),
+  //       edu_end_date: formatDate(values.educationEndDate),
+  //       percentage: normalize(values.percentage),
+  //       certifications: normalize(values.additionalCourses),
+
+  //       company_name: normalize(values.companyName),
+  //       previous_designation: normalize(values.expDesignation),
+  //       previous_department: normalize(values.expDepartment),
+  //       exp_start_date: formatDate(values.experienceStartDate),
+  //       exp_end_date: formatDate(values.experienceEndDate),
+  //       exp_location: normalize(values.location),
+  //       responsibilities: normalize(values.achievements),
+
+  //       basic_salary: normalize(values.basicSalary),
+  //       allowance: normalize(values.allowanceType),
+  //       bonus: normalize(values["bonus/incentives"]),
+  //       deductions: normalize(values.deductions),
+  //       net_salary: normalize(values["net salary"]),
+
+  //       asset_type: normalize(values.assetType),
+  //       model: normalize(values.assetId),
+  //       issued_date: formatDate(values.assetIssuedDate),
+  //       return_date: formatDate(values.assetReturnDate),
+  //     };
+
+  //     // Append all fields to FormData
+  //     Object.entries(details).forEach(([key, value]) => {
+  //       formData.append(key, value);
+  //     });
+
+  //     // Emergency contacts as JSON string
+  //     const emergencyList = values.emergencyContacts || [];
+  //     formData.append("emergency", JSON.stringify(emergencyList.map(e => ({
+  //       emergency_contact_name: e.contactName || "",
+  //       emergency_contact_relation: e.relationship || "",
+  //       emergency_contact_phone: e.phoneNumber || "",
+  //       emergency_contact_address: e.address || "",
+  //     }))));
+
+  //     // Profile picture
+  //     if (values.profile_picture_file?.originFileObj) {
+  //       formData.append("profile_picture", values.profile_picture_file.originFileObj);
+  //     }
+
+  //     // Document uploads
+  //     const docMap = {
+  //       resumeUpload: "resume",
+  //       aadharUpload: "aadhar",
+  //       panUpload: "pan",
+  //       degreeUpload: "degree",
+  //       marksheetUpload: "marksheet",
+  //       relievingUpload: "relieving",
+  //       experienceUpload: "experience",
+  //       offerLetterUpload: "offer",
+  //       passportUpload: "passport",
+  //       drivingLicenseUpload: "driving",
+  //       addressProofUpload: "addressproof",
+  //       bankProofUpload: "bankproof",
+  //     };
+
+  //     Object.entries(docMap).forEach(([formKey, apiKey]) => {
+  //       const file = values[formKey];
+  //       if (file?.originFileObj) {
+  //         formData.append(apiKey, file.originFileObj);
+  //       }
+  //     });
+
+  //     // If editing → send ID + _method=PUT
+  //     if (id) {
+  //       formData.append("id", id);
+  //       formData.append("_method", "PUT");
+  //     }
+
+  //     const apiCall = id
+  //       ? EmployeePersonalApi.update(id, formData)  // or .add() if your backend supports method spoofing
+  //       : EmployeePersonalApi.add(formData);
+
+  //     await apiCall;
+
+  //     message.success(`Employee ${id ? "updated" : "added"} successfully!`);
+  //     navigate("/employees");
+  //   } catch (err) {
+  //     console.error(err);
+  //     message.error(err?.response?.data?.message || "Save failed");
+  //   }
+  // };
+ 
+ 
+ 
+ 
