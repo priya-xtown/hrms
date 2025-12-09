@@ -1,7 +1,20 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { FaPencilAlt } from "react-icons/fa";
-import { Input, Select, Button, DatePicker, TimePicker, message, Space } from "antd";
+import {
+  Modal,
+  Input,
+  Select,
+  Form,
+  Button,
+  DatePicker,
+  TimePicker,
+  App,
+  Space,
+  Table,
+  Tag,
+} from "antd";
 import dayjs from "dayjs";
+import leaveService from "./service/Leave";
 
 const { Search } = Input;
 
@@ -12,14 +25,17 @@ const formatTimeForDisplay = (time) => {
 };
 
 export default function Leave() {
+  const { message } = App.useApp();
+
   const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [editIndex, setEditIndex] = useState(null);
+  const [editRecordId, setEditRecordId] = useState(null);
 
   const [formData, setFormData] = useState({
     employeeId: "",
@@ -29,17 +45,41 @@ export default function Leave() {
     toDate: null,
     fromTime: null,
     toTime: null,
-    permission: null,
+    status: null,
   });
 
   const matchesSearch = (record, q) => {
     if (!q) return true;
     const s = q.trim().toLowerCase();
     return (
-      String(record.employeeId).toLowerCase().includes(s) ||
-      String(record.employeeName).toLowerCase().includes(s)
+      String(record.emp_id || record.employeeId || "").toLowerCase().includes(s) ||
+      String(record.emp_name || record.employeeName || "").toLowerCase().includes(s)
     );
   };
+
+  // get all
+  const fetchLeaves = async () => {
+    try {
+      setLoading(true);
+      const params = {
+        search: search || undefined,
+        status: statusFilter !== "All" ? statusFilter : undefined,
+        page: currentPage,
+        limit: rowsPerPage,
+      };
+      const res = await leaveService.getAll(params);
+      setRecords(res.data?.data || []);
+    } catch (err) {
+      console.error(err);
+      message.error("Failed to fetch leave records");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaves();
+  }, [search, statusFilter, currentPage]);
 
   const filteredRecords = useMemo(() => {
     const filtered = records.filter((r) => {
@@ -58,37 +98,40 @@ export default function Leave() {
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / rowsPerPage));
   const startIndex = (currentPage - 1) * rowsPerPage;
-  const currentRecords = filteredRecords.slice(startIndex, startIndex + rowsPerPage);
+  const currentRecords = filteredRecords.slice(
+    startIndex,
+    startIndex + rowsPerPage
+  );
 
-  const openFormForNew = (employee) => {
+  const openFormForNew = () => {
     setFormData({
-      employeeId: employee?.employeeId || "",
-      employeeName: employee?.employeeName || "",
+      employeeId: "",
+      employeeName: "",
       leaveType: null,
       fromDate: null,
       toDate: null,
       fromTime: null,
       toTime: null,
-      permission: null,
+      status: null,
     });
-    setEditIndex(null);
+    setEditRecordId(null);
     setModalOpen(true);
   };
 
-  const openFormForEdit = (index) => {
-    const rec = records[index];
-    if (!rec) return;
+  // put
+  const openFormForEdit = (record) => {
+    if (!record) return;
     setFormData({
-      employeeId: rec.employeeId,
-      employeeName: rec.employeeName,
-      leaveType: rec.leaveType || null,
-      fromDate: rec.fromDate ? dayjs(rec.fromDate, "DD/MM/YYYY") : null,
-      toDate: rec.toDate ? dayjs(rec.toDate, "DD/MM/YYYY") : null,
-      fromTime: rec.fromTime ? dayjs(rec.fromTime, "HH:mm") : null,
-      toTime: rec.toTime ? dayjs(rec.toTime, "HH:mm") : null,
-      permission: rec.permission || null,
+      employeeId: record.emp_id || record.employeeId || "",
+      employeeName: record.emp_name || record.employeeName || "",
+      leaveType: record.leave_type || null,
+      fromDate: record.from_date ? dayjs(record.from_date, "YYYY-MM-DD") : null,
+      toDate: record.to_date ? dayjs(record.to_date, "YYYY-MM-DD") : null,
+      fromTime: record.from_time ? dayjs(record.from_time, "HH:mm") : null,
+      toTime: record.to_time ? dayjs(record.to_time, "HH:mm") : null,
+      status: record.status || null,
     });
-    setEditIndex(index);
+    setEditRecordId(record.id || null);
     setModalOpen(true);
   };
 
@@ -96,52 +139,163 @@ export default function Leave() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleFormSubmit = () => {
+  // create
+  const handleFormSubmit = async () => {
+  try {
+    // Validate
     if (
-      !formData.employeeId ||
-      !formData.employeeName ||
-      !formData.leaveType ||
-      !formData.fromDate ||
-      !formData.toDate ||
-      !formData.permission
-    ) {
+  !formData.employeeId ||
+  !formData.leaveType ||
+  !formData.fromDate ||
+  !formData.toDate
+) {
+
       message.warning("Please fill all required fields");
       return;
     }
 
-    const newRecord = {
-      employeeId: String(formData.employeeId).trim(),
-      employeeName: String(formData.employeeName).trim(),
-      leaveType: formData.leaveType,
-      fromDate: dayjs(formData.fromDate).format("DD/MM/YYYY"),
-      toDate: dayjs(formData.toDate).format("DD/MM/YYYY"),
-      fromTime: formData.fromTime ? dayjs(formData.fromTime).format("HH:mm") : null,
-      toTime: formData.toTime ? dayjs(formData.toTime).format("HH:mm") : null,
-      permission: formData.permission,
+    // Construct payload
+    const baseData = {
+      leave_type: formData.leaveType,
+      from_date: dayjs(formData.fromDate).format("YYYY-MM-DD"),
+      to_date: dayjs(formData.toDate).format("YYYY-MM-DD"),
+      from_time: formData.fromTime ? dayjs(formData.fromTime).format("HH:mm") : null,
+      to_time: formData.toTime ? dayjs(formData.toTime).format("HH:mm") : null,
     };
 
-    if (editIndex !== null && editIndex >= 0 && editIndex < records.length) {
-      const next = [...records];
-      next[editIndex] = { ...next[editIndex], ...newRecord };
-      setRecords(next);
-      message.success("Leave record updated");
+    if (!editRecordId) {
+      const createPayload = {
+        emp_id: String(formData.employeeId).trim(),
+        ...baseData,
+      };
+      const res = await leaveService.create(createPayload);
+      if (res?.status >= 200 && res?.status < 300) {
+        message.success("Leave created successfully");
+        setModalOpen(false);
+        setFormData({
+          employeeId: "",
+          employeeName: "",
+          leaveType: null,
+          fromDate: null,
+          toDate: null,
+          fromTime: null,
+          toTime: null,
+          status: null,
+        });
+        await fetchLeaves();
+      } else {
+        message.error(res?.data?.message || "Failed to create leave");
+      }
     } else {
-      setRecords((prev) => [...prev, newRecord]);
-      message.success("Leave record added");
+      const updateData = {
+        ...baseData,
+        status: formData.status || undefined,
+      };
+      const res = await leaveService.update(editRecordId, updateData);
+      if (res?.status >= 200 && res?.status < 300) {
+        message.success("Leave updated successfully");
+        setModalOpen(false);
+        setEditRecordId(null);
+        await fetchLeaves();
+      } else {
+        message.error(res?.data?.message || "Failed to update leave");
+      }
     }
+  } catch (err) {
+    console.error(err);
+    message.error("Operation failed");
+  }
+};
 
-    setModalOpen(false);
-    setEditIndex(null);
+// delete
+  const deleteLeave = async (id) => {
+    try {
+      const res = await leaveService.delete(id);
+      if (res?.status >= 200 && res?.status < 300) {
+        message.success("Leave deleted");
+        await fetchLeaves();
+      } else {
+        message.error(res?.data?.message || "Failed to delete leave");
+      }
+    } catch (err) {
+      console.error(err);
+      message.error("Error deleting leave");
+    }
   };
+
+  // ======================
+  // TABLE COLUMNS
+  // ======================
+  const columns = [
+    {
+      title: "Employee ID",
+      dataIndex: "emp_id",
+      render: (id) => (
+        <span className="font-semibold text-[#408CFF] underline cursor-pointer">
+          {id}
+        </span>
+      ),
+    },
+    {
+      title: "Employee Name",
+      dataIndex: "emp_name",
+    },
+    {
+      title: "Leave Type",
+      dataIndex: "leave_type",
+      align: "center",
+    },
+    {
+      title: "From Date",
+      dataIndex: "from_date",
+      align: "center",
+    },
+    {
+      title: "To Date",
+      dataIndex: "to_date",
+      align: "center",
+    },
+    {
+      title: "From Time",
+      dataIndex: "from_time",
+      align: "center",
+      render: (t) => formatTimeForDisplay(t),
+    },
+    {
+      title: "To Time",
+      dataIndex: "to_time",
+      align: "center",
+      render: (t) => formatTimeForDisplay(t),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      align: "center",
+      render: (permission) => (
+        <Tag color={permission === "Approved" ? "green" : permission === "Pending" ? "blue" : "red"}>
+          {permission}
+        </Tag>
+      ),
+    },
+    {
+      title: "Action",
+      align: "center",
+      render: (_, record) => (
+        <Space>
+          <Button type="primary" onClick={() => openFormForEdit(record)} icon={<FaPencilAlt />} />
+          <Button danger onClick={() => deleteLeave(record.id)}>Delete</Button>
+        </Space>
+      ),
+    },
+  ];
 
   return (
     <div className="p-8 bg-white rounded-2xl shadow-xl">
-      {/* ===== PAGE HEADER ===== */}
+      {/* HEADER */}
       <div className="w-full flex flex-wrap items-start justify-between gap-4 mb-6">
         <h1 className="font-semibold text-xl">Leave Management</h1>
 
-        {/* === Search + Filter + Add Leave === */}
-        <Space size="middle" className="flex flex-wrap justify-end">
+        <Space size="middle">
           <Search
             placeholder="Search by Employee ID or Name..."
             allowClear
@@ -167,94 +321,27 @@ export default function Leave() {
             ]}
           />
 
-          <Button
-            type="primary"
-            onClick={() => openFormForNew()}
-            className="bg-purple-500 text-white rounded-lg shadow-md"
-          >
+          <Button type="primary" onClick={openFormForNew}>
             Add Leave
           </Button>
         </Space>
       </div>
 
-      {/* ===== TABLE ===== */}
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[1000px] border-collapse border border-gray-100 text-base">
-          <thead>
-            <tr className="bg-gray-50 text-gray-600">
-              <th className="border border-gray-100 p-4 text-left">Employee ID</th>
-              <th className="border border-gray-100 p-4 text-left">Employee Name</th>
-              <th className="border border-gray-100 p-4 text-center">Leave Type</th>
-              <th className="border border-gray-100 p-4 text-center">From Date</th>
-              <th className="border border-gray-100 p-4 text-center">To Date</th>
-              <th className="border border-gray-100 p-4 text-center">From Time</th>
-              <th className="border border-gray-100 p-4 text-center">To Time</th>
-              <th className="border border-gray-100 p-4 text-center">Permission</th>
-              <th className="border border-gray-100 p-4 text-center">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentRecords.length > 0 ? (
-              currentRecords.map((r, idx) => {
-                const recordIndex = startIndex + idx;
-                return (
-                  <tr
-                    key={`${r.employeeId}-${recordIndex}`}
-                    className="hover:bg-gray-50 text-gray-700 transition"
-                  >
-                    <td className="border border-gray-200 p-4 font-semibold text-[#408CFF] align-middle cursor-pointer underline">
-                      {r.employeeId}
-                    </td>
-                    <td className="border border-gray-200 p-4 align-middle">{r.employeeName}</td>
-                    <td className="border border-gray-200 p-4 text-center align-middle">{r.leaveType}</td>
-                    <td className="border border-gray-200 p-4 text-center align-middle">{r.fromDate}</td>
-                    <td className="border border-gray-200 p-4 text-center align-middle">{r.toDate}</td>
-                    <td className="border border-gray-200 p-4 text-center align-middle">
-                      {formatTimeForDisplay(r.fromTime)}
-                    </td>
-                    <td className="border border-gray-200 p-4 text-center align-middle">
-                      {formatTimeForDisplay(r.toTime)}
-                    </td>
-                    <td className="border border-gray-200 p-4 text-center align-middle">
-                      <span
-                        className={`px-4 py-1 rounded-full text-sm font-bold ${
-                          r.permission === "Approved"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
-                      >
-                        {r.permission}
-                      </span>
-                    </td>
-                    <td className="border border-gray-200 p-4 text-center align-middle">
-                      <button
-                        onClick={() => openFormForEdit(recordIndex)}
-                        className="p-3 bg-black text-white rounded hover:scale-105 transition"
-                        title="Edit"
-                      >
-                        <FaPencilAlt />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan={9} className="text-center text-gray-400 italic p-8">
-                  No leave records match the selected filters
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Table
+        loading={loading}
+        columns={columns}
+        dataSource={currentRecords}
+        rowKey={(r) => r.id}
+      />
 
-
+      {/* PAGINATION */}
       <div className="flex items-center justify-between mt-6">
         <div className="text-sm text-gray-600">
           Showing {filteredRecords.length === 0 ? 0 : startIndex + 1} -{" "}
-          {Math.min(startIndex + rowsPerPage, filteredRecords.length)} of {filteredRecords.length}
+          {Math.min(startIndex + rowsPerPage, filteredRecords.length)} of{" "}
+          {filteredRecords.length}
         </div>
+
         <div className="flex items-center gap-2">
           <button
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
@@ -263,9 +350,11 @@ export default function Leave() {
           >
             Prev
           </button>
+
           <div className="px-4 py-2 border rounded">
             {currentPage} / {totalPages}
           </div>
+
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             className="px-4 py-2 border rounded disabled:opacity-50"
@@ -276,95 +365,135 @@ export default function Leave() {
         </div>
       </div>
 
+      {/* MODAL */}
+     <Modal
+  title={editRecordId !== null ? "Edit Leave" : "Add Leave"}
+  open={modalOpen}
+  onCancel={() => setModalOpen(false)}
+  footer={null}
+  width={900}
+>
 
-      {modalOpen && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-start lg:items-center justify-center z-50 overflow-auto py-10">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-auto">
-            <h2 className="text-xl font-bold mb-4">
-              {editIndex !== null ? "Edit Leave" : "Add Leave"}
-            </h2>
-
-            <div className="grid grid-cols-1 gap-4">
+        <Form layout="vertical" onFinish={handleFormSubmit}>
+          <div className="grid grid-cols-3 gap-6">
+            <Form.Item
+              label="Employee ID"
+              name="employeeId"
+              rules={[{ required: true, message: "Employee ID is required" }]}
+            >
               <Input
-                placeholder="Employee ID *"
+                size="large"
                 value={formData.employeeId}
                 onChange={(e) => handleFormChange("employeeId", e.target.value)}
-                size="large"
               />
+            </Form.Item>
+
+            <Form.Item
+              label="Employee Name"
+              name="employeeName"
+
+            >
               <Input
-                placeholder="Employee Name *"
-                value={formData.employeeName}
-                onChange={(e) => handleFormChange("employeeName", e.target.value)}
                 size="large"
+                value={formData.employeeName}
+                onChange={(e) =>
+                  handleFormChange("employeeName", e.target.value)
+                }
               />
+            </Form.Item>
+
+            <Form.Item
+              label="Leave Type"
+              name="leaveType"
+              rules={[{ required: true, message: "Select leave type" }]}
+            >
               <Select
+                size="large"
                 value={formData.leaveType}
-                placeholder="Select Leave *"
                 onChange={(value) => handleFormChange("leaveType", value)}
                 options={[
-                  { label: "Casual Leave", value: "Casual Leave" },
-                  { label: "Sick Leave", value: "Sick Leave" },
-                  { label: "Leave", value: "Leave" },
+                  { label: "Casual", value: "Casual" },
+                  { label: "Sick", value: "Sick" },
+                  { label: "Permission", value: "Permission" },
+                  { label: "Other", value: "Other" },
                 ]}
-                size="large"
-                className="w-full"
               />
-              <div className="grid grid-cols-2 gap-3">
-                <DatePicker
-                  placeholder="From Date *"
-                  value={formData.fromDate ? dayjs(formData.fromDate) : null}
-                  format="DD/MM/YYYY"
-                  onChange={(date) => handleFormChange("fromDate", date)}
-                  className="w-full"
-                />
-                <DatePicker
-                  placeholder="To Date *"
-                  value={formData.toDate ? dayjs(formData.toDate) : null}
-                  format="DD/MM/YYYY"
-                  onChange={(date) => handleFormChange("toDate", date)}
-                  className="w-full"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <TimePicker
-                  placeholder="From Time"
-                  value={formData.fromTime ? dayjs(formData.fromTime, "HH:mm") : null}
-                  format="HH:mm"
-                  onChange={(time) => handleFormChange("fromTime", time)}
-                  className="w-full"
-                />
-                <TimePicker
-                  placeholder="To Time"
-                  value={formData.toTime ? dayjs(formData.toTime, "HH:mm") : null}
-                  format="HH:mm"
-                  onChange={(time) => handleFormChange("toTime", time)}
-                  className="w-full"
-                />
-              </div>
+            </Form.Item>
+          </div>
+
+          <div className="grid grid-cols-3 gap-6">
+            <Form.Item
+              label="From Date"
+              name="fromDate"
+              rules={[{ required: true, message: "Select From Date" }]}
+            >
+              <DatePicker
+                className="w-full"
+                format="DD/MM/YYYY"
+                size="large"
+                value={formData.fromDate}
+                onChange={(date) => handleFormChange("fromDate", date)}
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="To Date"
+              name="toDate"
+              rules={[{ required: true, message: "Select To Date" }]}
+            >
+              <DatePicker
+                className="w-full"
+                format="DD/MM/YYYY"
+                size="large"
+                value={formData.toDate}
+                onChange={(date) => handleFormChange("toDate", date)}
+              />
+            </Form.Item>
+
+            <Form.Item label="Status" name="status">
               <Select
-                value={formData.permission}
-                placeholder="Permission *"
-                onChange={(value) => handleFormChange("permission", value)}
+                size="large"
+                value={formData.status}
+                onChange={(value) => handleFormChange("status", value)}
                 options={[
+                  { label: "Pending", value: "Pending" },
                   { label: "Approved", value: "Approved" },
                   { label: "Denied", value: "Denied" },
                 ]}
-                size="large"
-                className="w-full"
               />
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6">
-              <Button type="primary" onClick={handleFormSubmit}>
-                Submit
-              </Button>
-              <Button onClick={() => { setModalOpen(false); setEditIndex(null); }}>
-                Cancel
-              </Button>
-            </div>
+            </Form.Item>
           </div>
-        </div>
-      )}
+
+          <div className="grid grid-cols-3 gap-6">
+            <Form.Item label="From Time" name="fromTime">
+              <TimePicker
+                className="w-full"
+                format="HH:mm"
+                size="large"
+                value={formData.fromTime}
+                onChange={(time) => handleFormChange("fromTime", time)}
+              />
+            </Form.Item>
+
+            <Form.Item label="To Time" name="toTime">
+              <TimePicker
+                className="w-full"
+                format="HH:mm"
+                size="large"
+                value={formData.toTime}
+                onChange={(time) => handleFormChange("toTime", time)}
+              />
+            </Form.Item>
+          </div>
+
+          <div className="flex justify-end gap-3 mt-4">
+            <Button onClick={() => setModalOpen(false)}>Cancel</Button>
+            <Button type="primary" htmlType="submit">
+              Save
+            </Button>
+          </div>
+        </Form>
+      </Modal>
     </div>
   );
 }

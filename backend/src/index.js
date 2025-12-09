@@ -11,6 +11,7 @@ import userRoutes from './modules/user/routes/index.js';
 import employeeRoutes from './modules/employee/routes/index.js';
 import shiftRoutes from './modules/shiftmaster/routes/index.js';
 import attendanceRoutes from './modules/attandance/routes/index.js';
+import companyRoutes from './modules/companymaster/routes/index.js';
 // import payrollRoutes from './modules/payrollmaster/routes/index.js';
 
 
@@ -51,9 +52,9 @@ app.use('/hrms_api/v1', userRoutes);
 app.use('/hrms_api/v1', shiftRoutes);
 
 app.use('/hrms_api/v1', employeeRoutes);
+app.use('/hrms_api/v1',companyRoutes);
 
 app.use('/hrms_api/v1',attendanceRoutes);
-// app.use('/hrms_api/v1',payrollRoutes);
 
 
 

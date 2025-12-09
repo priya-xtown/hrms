@@ -7,7 +7,7 @@ const DepartmentApi = {
   create: (data) => api.post("department/createDepartment", data),
 
   // ✅ Get all departments
-  getAll: () => api.get("department/getAllDepartments"),
+  getAll: (page = 1, limit = 10) => api.get("department/getAllDepartments", { params: { page, limit } }),
 
   // ✅ Get department by ID
   getById: (id) => api.get(`department/getDepartmentById/${id}`),

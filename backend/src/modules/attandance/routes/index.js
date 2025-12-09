@@ -18,7 +18,7 @@ router.use("/addondutty", addonduttyRoutes);
 router.use("/overtime", overtimeRoutes);
 
 //  ✅ Leave routes
-router.use("/leave", LeaveRoutes);stafRecordRoutes
+router.use("/leave", LeaveRoutes);
 
 //  ✅ stafRecordRoutes routes
 router.use("/staf", stafRecordRoutes);

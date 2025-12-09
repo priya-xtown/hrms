@@ -1,0 +1,122 @@
+
+// export const getAttendanceReport = async (req, res) => {
+//   try {
+//     const { year, month } = req.query;
+//     const queryYear = year || new Date().getFullYear();
+//     const queryMonth = month || new Date().getMonth() + 1;
+
+//     // ✅ Generate all days for the month in JS
+//     const daysInMonth = new Date(queryYear, queryMonth, 0).getDate();
+//     const dateList = Array.from({ length: daysInMonth }, (_, i) =>
+//       new Date(queryYear, queryMonth - 1, i + 1).toISOString().split("T")[0]
+//     );
+
+//     // ✅ Fetch employee + department + branch + designation info
+//     const employees = await Employee.findAll({
+//       attributes: ["id", "emp_id", "attendance_id", "first_name"],
+//       include: [
+//         {
+//           model: EmployeeDetail,
+//           as: "details",
+//           attributes: ["departmentId", "designationId", "branchId"],
+//           include: [
+//             {
+//               model: Department,
+//               as: "department",
+//               attributes: ["department_name"],
+//               where: { is_active: 1 },
+//               required: false
+//             },
+//             {
+//               model: Role,
+//               as: "designation",
+//               attributes: ["role_name"],
+//               where: { is_active: 1 },
+//               required: false
+//             },
+//             {
+//               model: Branch,
+//               as: "branch",
+//               attributes: ["branch_name"],
+//               where: { is_active: 1 },
+//               required: false
+//             }
+//           ]
+//         },
+//         {
+//           model: PersonnelEmployee,
+//           as: "attendance",
+//           attributes: ["emp_code"],
+//           required: false
+//         }
+//       ]
+//     });
+
+//     // ✅ Fetch attendance logs for the month
+//     const transactions = await IclockTransaction.findAll({
+//       attributes: [
+//         "emp_code",
+//         [fn("DATE", col("punch_time")), "punch_date"],
+//         [fn("MIN", col("punch_time")), "first_punch_time"],
+//         [
+//           fn("GROUP_CONCAT", literal("DISTINCT punch_state ORDER BY punch_time SEPARATOR ','")),
+//           "punch_states"
+//         ]
+//       ],
+//       where: {
+//         punch_time: {
+//           [Op.between]: [
+//             new Date(queryYear, queryMonth - 1, 1),
+//             new Date(queryYear, queryMonth, 0, 23, 59, 59)
+//           ]
+//         }
+//       },
+//       group: ["emp_code", literal("DATE(punch_time)")]
+//     });
+
+//     // Convert transactions to quick lookup
+//     const txMap = {};
+//     for (const tx of transactions) {
+//       const data = tx.get({ plain: true });
+//       if (!txMap[data.emp_code]) txMap[data.emp_code] = {};
+//       txMap[data.emp_code][data.punch_date] = data;
+//     }
+
+//     // ✅ Construct attendance matrix
+//     const report = [];
+//     for (const emp of employees) {
+//       const e = emp.get({ plain: true });
+//       const empCode = e.attendance?.emp_code;
+//       const dept = e.details?.department?.department_name || null;
+//       const desg = e.details?.designation?.role_name || null;
+//       const branch = e.details?.branch?.branch_name || null;
+
+//       for (const date of dateList) {
+//         const tx = empCode && txMap[empCode]?.[date];
+//         report.push({
+//           emp_id: e.emp_id,
+//           first_name: e.first_name,
+//           department_name: dept,
+//           designation_name: desg,
+//           branch_name: branch,
+//           punch_date: date,
+//           punch_time: tx?.first_punch_time || null,
+//           punch_state: tx?.punch_states || null,
+//           status: tx ? "PRESENT" : "ABSENT"
+//         });
+//       }
+//     }
+
+//     res.status(200).json({
+//       message: "Attendance report fetched successfully",
+//       year: queryYear,
+//       month: queryMonth,
+//       data: report
+//     });
+//   } catch (error) {
+//     console.error("Error fetching attendance report:", error);
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
+
+

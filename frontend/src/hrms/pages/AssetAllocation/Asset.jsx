@@ -1,14 +1,23 @@
 import React, { useState, useMemo } from "react";
-import { DatePicker, Modal, Tabs, Input, Button } from "antd";
+import {
+  Form,
+  DatePicker,
+  Modal,
+  Input,
+  Button,
+  Table,
+  Tag,
+  Space,
+  Select,
+  Popconfirm,
+  message ,
+} from "antd";
+import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { FaTrash, FaPencilAlt } from "react-icons/fa";
 
-export default function AssetMaster() {
-  const [activeTab, setActiveTab] = useState("company");
-
+export default function CompanyAssets() {
   const [companyAssets, setCompanyAssets] = useState([]);
   const [companyForm, setCompanyForm] = useState({
-    assetId: "",
     assetType: "",
     customAssetType: "",
     purchasedDate: "",
@@ -19,22 +28,22 @@ export default function AssetMaster() {
     notes: "",
     value: "",
   });
-
+  const [form] = Form.useForm();
   const [errors, setErrors] = useState({});
   const [editIndex, setEditIndex] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+
+  const assetTypes = ["Laptop", "Desktop", "Monitor", "Other"];
+  const modelBrands = ["Dell", "HP", "Lenovo", "Asus"];
+  const conditions = ["New", "Used", "Damaged"];
+  const statuses = ["Active", "Inactive"];
   const itemsPerPage = 5;
 
-  const assetTypes = ["Laptop", "Desktop", "Mac", "Other"];
-  const conditions = ["New", "Refurbished"];
-  const statuses = ["Active", "Inactive", "Returned", "Lost"];
-  const modelBrands = [
-    "ACER", "APPLE", "HP", "DELL", "LENOVO", "MICROSOFT",
-    "SAMSUNG", "MSI", "GIGABYTE", "TOSHIBA", "LG", "SONY", "ASUS",
-  ];
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
 
   const formatDisplayDate = (date) => {
     if (!date) return "";
@@ -49,9 +58,13 @@ export default function AssetMaster() {
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
+  const handleDateChange = (date, dateString) => {
+    setCompanyForm((prev) => ({ ...prev, purchasedDate: dateString }));
+    setErrors((prev) => ({ ...prev, purchasedDate: "" }));
+  };
+
   const resetForm = () => {
     setCompanyForm({
-      assetId: "",
       assetType: "",
       customAssetType: "",
       purchasedDate: "",
@@ -66,43 +79,59 @@ export default function AssetMaster() {
     setEditIndex(null);
   };
 
-  const handleAdd = () => {
-    const newErrors = {};
-    Object.keys(companyForm).forEach((key) => {
-      if (key === "customAssetType" && companyForm.assetType !== "Other") return;
-      if (!companyForm[key] || companyForm[key].toString().trim() === "") {
-        newErrors[key] = `${key.replace(/([A-Z])/g, " $1")} is required`;
-      }
-    });
+  // create
+const handleAdd = async (values) => {
+setLoading(true);
+try {
+// Determine final asset type
+const finalAssetType =
+values.asset_type === "Other" ? values.customAssetType : values.asset_type;
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+// Construct payload for API
+const payload = {
+  assetType: finalAssetType,
+  assetName: values.assetName || "",
+  value: parseFloat(values.value) || 0,
+  purchaseDate: values.purchased_date.format("DD/MM/YYYY"),
+  serialNumber: values.serial_number,
+  model: values.model_type,
+  status: values.status || "Active",
+  notes: values.notes || "",
+  condition: values.condition,
+};
 
-    const finalAssetType =
-      companyForm.assetType === "Other"
-        ? companyForm.customAssetType
-        : companyForm.assetType;
+console.log("📤 Create Asset Payload:", payload);
 
-    const newAsset = {
-      ...companyForm,
-      assetType: finalAssetType,
-      value: parseFloat(companyForm.value) || 0,
-      // employeeId and employeeName will remain undefined for now
-    };
+// Call your API via assetService
+const res = await assetService.createAsset(payload);
 
-    if (editIndex !== null) {
-      const updated = [...companyAssets];
-      updated[editIndex] = newAsset;
-      setCompanyAssets(updated);
-    } else {
-      setCompanyAssets([...companyAssets, newAsset]);
-    }
+if ((res?.status >= 200 && res?.status < 300) || res?.data?.success) {
+  message.success(res?.data?.message || "Asset added successfully!");
+  setIsModalOpen(false);
+  form.resetFields(); // reset your form fields
 
-    resetForm();
-    setIsModalOpen(false);
-  };
+  // Add new asset to local state
+  setCompanyAssets((prev) => [
+    ...prev,
+    { ...payload, assetId: res.data?.assetId || Date.now() },
+  ]);
+
+  // Optional: refetch assets from server to stay synced
+  await fetchAssets();
+} else {
+  message.error(res?.data?.message || "Failed to add asset");
+}
+
+
+} catch (err) {
+console.error("❌ Error adding asset:", err);
+message.error(err.response?.data?.message || "Error adding asset");
+} finally {
+setLoading(false);
+}
+};
+
+
 
   const handleEdit = (index) => {
     setCompanyForm(companyAssets[index]);
@@ -115,292 +144,249 @@ export default function AssetMaster() {
   };
 
   const filteredData = useMemo(() => {
-    const filtered = companyAssets.filter((a) => {
-      const matchesSearch =
-        (a.assetId || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (a.serialNumber || "").toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFilter = filterType ? a.assetType === filterType : true;
-      return matchesSearch && matchesFilter;
-    });
-    return filtered;
-  }, [companyAssets, searchQuery, filterType]);
+    return companyAssets.filter((a) =>
+      (a.serialNumber || "").toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [companyAssets, searchQuery]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
-  const currentData = filteredData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const currentData = filteredData.slice(0, itemsPerPage);
 
   const totalCompanyValue = companyAssets.reduce(
     (acc, a) => acc + (a.value || 0),
     0
   );
 
+  const openModalForAdd = () => {
+    resetForm();
+    setIsModalOpen(true);
+  };
+
   return (
-    <div className="p-8 max-w-7xl mx-auto bg-white rounded-2xl shadow-xl">
-      <Tabs
-        activeKey={activeTab}
-        onChange={(key) => {
-          setActiveTab(key);
-          resetForm();
-        }}
-        items={[
-          { label: "Company Assets", key: "company" },
-          { label: "Employee Assets", key: "employee" },
-        ]}
-      />
-
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mt-4 mb-6">
-        <h1 className="text-3xl font-extrabold bg-clip-text text-transparent bg-purple-500">
-          {activeTab === "company" ? "Company Assets" : "Employee Assets"}
-        </h1>
-
-        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3">
-          <input
-            type="text"
-            placeholder="Search by ID or Serial..."
+    <>
+      {/* Top Bar */}
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+        <h2 className="font-semibold text-xl m-0">Company Assets</h2>
+        <div className="flex gap-2 flex-wrap">
+          <Input.Search
+            placeholder="Search by Serial..."
+            allowClear
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-0"
+            onChange={handleSearchChange}
+            style={{ width: 260 }}
           />
-
-          {activeTab === "company" && (
-            <>
-              <select
-                value={filterType}
-                onChange={(e) => {
-                  setFilterType(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-0"
-              >
-                <option value="">All Types</option>
-                {assetTypes.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-
-              <button
-                onClick={() => {
-                  resetForm();
-                  setIsModalOpen(true);
-                }}
-                className="px-6 py-2 bg-purple-500 text-white rounded-lg shadow hover:scale-105 transition"
-              >
-                + Add
-              </button>
-            </>
-          )}
+          <Button type="primary" onClick={openModalForAdd}>
+            Add Asset
+          </Button>
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[1000px] border-collapse border border-gray-100 text-base">
-          <thead>
-            <tr className="bg-gray-50 text-gray-600">
-              {activeTab === "employee" && (
-                <>
-                  <th className="border border-gray-100 p-4 text-left">Employee ID</th>
-                  <th className="border border-gray-100 p-4 text-left">Employee Name</th>
-                </>
-              )}
-              <th className="border border-gray-100 p-4 text-left">Asset ID</th>
-              <th className="border border-gray-100 p-4 text-left">Asset Type</th>
-              <th className="border border-gray-100 p-4 text-left">Serial</th>
-              <th className="border border-gray-100 p-4 text-left">Model</th>
-              <th className="border border-gray-100 p-4 text-left">Condition</th>
-              <th className="border border-gray-100 p-4 text-left">Status</th>
-              <th className="border border-gray-100 p-4 text-left">Purchased</th>
-              <th className="border border-gray-100 p-4 text-left">Value</th>
-              <th className="border border-gray-100 p-4 text-left">Notes</th>
-              {activeTab === "company" && (
-                <th className="border border-gray-100 p-4 text-left">Actions</th>
-              )}
-            </tr>
-          </thead>
+      {/* Table */}
+      <Table
+  columns={[
+    { title: "Asset Type", dataIndex: "assetType" },
+    { title: "Serial", dataIndex: "serialNumber" },
+    { title: "Model", dataIndex: "model" },
+    { title: "Condition", dataIndex: "condition" },
+    {
+      title: "Status",
+      dataIndex: "status",
+      render: (status) => (
+        <Tag color={status === "Active" ? "green" : "red"}>
+          {status || "Active"}
+        </Tag>
+      ),
+    },
+    {
+      title: "Purchased",
+      dataIndex: "purchasedDate",
+      render: (date) => formatDisplayDate(date),
+    },
+    {
+      title: "Value",
+      dataIndex: "value",
+      render: (value) => `₹${value}`,
+    },
+    { title: "Notes", dataIndex: "notes" },
+    {
+      title: "Actions",
+      render: (_, record) => (
+        <Space>
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record.assetId)}
+          />
+          <Popconfirm
+            title="Delete this asset?"
+            onConfirm={() => handleDelete(record.assetId)}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Button danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ]}
+  dataSource={currentData}
+  rowKey="assetId" // <-- Use a unique field instead of index
+  pagination={false}
+  bordered
+/>
 
-          <tbody>
-            {currentData.length > 0 ? (
-              currentData.map((a, idx) => (
-                <tr key={idx} className="hover:bg-gray-50 text-gray-700 transition">
-                  {activeTab === "employee" && (
-                    <>
-                      <td className="border p-3">{a.employeeId || "-"}</td>
-                      <td className="border p-3">{a.employeeName || "-"}</td>
-                    </>
-                  )}
-                  <td className="border p-3">{a.assetId}</td>
-                  <td className="border p-3">{a.assetType}</td>
-                  <td className="border p-3">{a.serialNumber}</td>
-                  <td className="border p-3">{a.model}</td>
-                  <td className="border p-3">{a.condition}</td>
-                  <td className="border p-3">{a.status}</td>
-                  <td className="border p-3">{formatDisplayDate(a.purchasedDate)}</td>
-                  <td className="border p-3">₹{a.value}</td>
-                  <td className="border p-3">{a.notes}</td>
-                  {activeTab === "company" && (
-                    <td className="border p-3">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEdit(idx)}
-                          className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                        >
-                          <FaPencilAlt />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(idx)}
-                          className="p-2 bg-red-500 text-white rounded hover:bg-red-600"
-                        >
-                          <FaTrash />
-                        </button>
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={activeTab === "company" ? 10 : 11} className="text-center p-6 text-gray-400 italic">
-                  No assets found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-
-        {activeTab === "company" && (
-          <div className="mt-3 font-bold text-gray-700">
-            Total Asset Value: ₹{totalCompanyValue.toLocaleString()}
-          </div>
-        )}
+      {/* Total Value */}
+      <div className="mt-3 font-bold text-gray-700">
+        Total Asset Value: ₹{totalCompanyValue.toLocaleString()}
       </div>
 
-      <div className="flex items-center justify-between mt-4">
-        <button
-          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-          className="px-4 py-2 border rounded disabled:opacity-50"
-          disabled={currentPage === 1}
-        >
-          Prev
-        </button>
-        <div className="px-4 py-2 border rounded">
-          {currentPage} / {totalPages}
-        </div>
-        <button
-          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-          className="px-4 py-2 border rounded disabled:opacity-50"
-          disabled={currentPage === totalPages}
-        >
-          Next
-        </button>
-      </div>
+      {/* Modal */}
+      <Modal
+        title={editIndex !== null ? "Edit Asset" : "Add Asset"}
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        footer={null}
+        width={800}
 
-      {activeTab === "company" && isModalOpen && (
-        <Modal
-          title={editIndex !== null ? "Edit Asset" : "Add Asset"}
-          open={isModalOpen}
-          onCancel={() => {
-            resetForm();
-            setIsModalOpen(false);
+      >
+
+        <Form
+          form={form}        // ✅ Connect form instance here
+          layout="vertical"
+          onFinish={(values) => {
+            handleAdd(values);
+            form.resetFields();
           }}
-          footer={null}
-          width={800}
+          initialValues={{
+            assetType: "",
+            model: "",
+            condition: "",
+            status: "active",
+          }}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              { label: "Asset ID", name: "assetId", type: "text" },
-              { label: "Asset Type", name: "assetType", type: "select", options: assetTypes },
-              { label: "Custom Asset Type", name: "customAssetType", type: "text", condition: companyForm.assetType === "Other" },
-              { label: "Purchased Date", name: "purchasedDate", type: "date" },
-              { label: "Serial Number", name: "serialNumber", type: "text" },
-              { label: "Model", name: "model", type: "modelSelect" },
-              { label: "Condition", name: "condition", type: "select", options: conditions },
-              { label: "Status", name: "status", type: "select", options: statuses },
-              { label: "Value", name: "value", type: "number" },
-            ].map((field) => {
-              if (field.name === "customAssetType" && !field.condition) return null;
-              return (
-                <div key={field.name}>
-                  <label className="font-semibold">{field.label}</label>
-                  {field.type === "text" || field.type === "number" ? (
-                    <Input
-                      type={field.type}
-                      name={field.name}
-                      value={companyForm[field.name]}
-                      onChange={handleChange}
-                      placeholder={`Enter ${field.label}`}
-                      disabled={field.name === "customAssetType" && companyForm.assetType !== "Other"}
-                    />
-                  ) : field.type === "modelSelect" ? (
-                    <select
-                      name="model"
-                      value={companyForm.model}
-                      onChange={handleChange}
-                      className="border p-2 rounded w-full"
-                    >
-                      <option value="">Select Model</option>
-                      {modelBrands.map((brand) => (
-                        <option key={brand} value={brand}>{brand}</option>
-                      ))}
-                    </select>
-                  ) : field.type === "select" ? (
-                    <select
-                      name={field.name}
-                      value={companyForm[field.name]}
-                      onChange={handleChange}
-                      className="border p-2 rounded w-full"
-                    >
-                      <option value="">Select {field.label}</option>
-                      {field.options.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  ) : field.type === "date" ? (
-                    <DatePicker
-                      format="DD/MM/YYYY"
-                      value={companyForm[field.name] ? dayjs(companyForm[field.name], "DD/MM/YYYY") : null}
-                      onChange={(date, ds) => setCompanyForm(prev => ({ ...prev, [field.name]: ds }))}
-                      className="w-full"
-                    />
-                  ) : null}
-                  {errors[field.name] && <p className="text-red-500 text-sm">{errors[field.name]}</p>}
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Asset Type */}
+            <Form.Item
+              name="asset_type"
+              label="Asset Type"
+              rules={[{ required: true, message: "Please select asset type" }]}
+            >
+              <Select placeholder="Select Asset Type">
+                <Select.Option value="Laptop">Laptop</Select.Option>
+                <Select.Option value="Desktop">Desktop</Select.Option>
+                <Select.Option value="Printer">Printer</Select.Option>
+                <Select.Option value="Other">Other</Select.Option>
+              </Select>
+            </Form.Item>
 
-            <div className="col-span-2">
-              <label className="font-semibold">Notes</label>
-              <Input.TextArea
-                name="notes"
-                value={companyForm.notes}
-                onChange={handleChange}
-                placeholder="Add notes"
-              />
-              {errors.notes && <p className="text-red-500 text-sm">{errors.notes}</p>}
-            </div>
+            {/* Custom Asset Type */}
+            <Form.Item
+              shouldUpdate={(prev, curr) => prev.assetType !== curr.assetType}
+              noStyle
+            >
+              {({ getFieldValue }) =>
+                getFieldValue("assetType") === "Other" ? (
+                  <Form.Item
+                    name="customAssetType"
+                    label="Custom Asset Type"
+                    rules={[{ required: true, message: "Please enter custom asset type" }]}
+                  >
+                    <Input placeholder="Enter Custom Asset Type" />
+                  </Form.Item>
+                ) : null
+              }
+            </Form.Item>
+
+            {/* Purchased Date */}
+            <Form.Item
+              name="purchased_date"
+              label="Purchased Date"
+              rules={[{ required: true, message: "Please select purchased date" }]}
+            >
+              <DatePicker format="DD/MM/YYYY" className="w-full" />
+            </Form.Item>
+
+            {/* Serial Number */}
+            <Form.Item
+              name="serial_number"
+              label="Serial Number"
+              rules={[{ required: true, message: "Please enter serial number" }]}
+            >
+              <Input placeholder="Enter Serial Number" />
+            </Form.Item>
+
+            {/* Model */}
+            <Form.Item
+              name="model_type"
+              label="Model"
+              rules={[{ required: true, message: "Please select model" }]}
+            >
+              <Select placeholder="Select Model">
+                <Select.Option value="HP">HP</Select.Option>
+                <Select.Option value="Dell">Dell</Select.Option>
+                <Select.Option value="Lenovo">Lenovo</Select.Option>
+              </Select>
+            </Form.Item>
+
+            {/* Condition */}
+            <Form.Item
+              name="condition"
+              label="Condition"
+              rules={[{ required: true, message: "Please select condition" }]}
+            >
+              <Select placeholder="Select Condition">
+                <Select.Option value="New">New</Select.Option>
+                <Select.Option value="Used">Used</Select.Option>
+                <Select.Option value="Damaged">Damaged</Select.Option>
+              </Select>
+            </Form.Item>
+
+            {/* Status */}
+            <Form.Item
+              name="status"
+              label="Status"
+              rules={[{ required: true, message: "Please select status" }]}
+            >
+              <Select>
+                <Select.Option value="active">Active</Select.Option>
+                <Select.Option value="inactive">Inactive</Select.Option>
+              </Select>
+            </Form.Item>
+
+            {/* Value */}
+            <Form.Item
+              name="value"
+              label="Value"
+              rules={[{ required: true, message: "Please enter asset value" }]}
+            >
+              <Input type="number" placeholder="Enter Asset Value" />
+            </Form.Item>
+
+            {/* Notes */}
+            <Form.Item name="notes" label="Notes" className="col-span-4">
+              <Input.TextArea rows={3} placeholder="Enter Notes" />
+            </Form.Item>
           </div>
 
-          <div className="mt-6 flex justify-end gap-3">
+          {/* Buttons */}
+          <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4">
             <Button
+              danger
               onClick={() => {
+                form.resetFields();
                 setIsModalOpen(false);
-                resetForm();
               }}
             >
               Cancel
             </Button>
-            <Button type="primary" onClick={handleAdd}>
-              {editIndex !== null ? "Update" : "Add"} Asset
+
+
+            <Button type="primary" htmlType="submit">
+              {editIndex !== null ? "Update Asset" : "Add Asset"}
             </Button>
           </div>
-        </Modal>
-      )}
-    </div>
+        </Form>
+      </Modal>
+
+    </>
   );
 }
-

@@ -16,7 +16,8 @@ router.post(
   validate(createLeaveSchema),
   createLeave
 );
-router.get("/getAllleave",verifyToken,authorizeRole(["admin", "superadmin", "user"]),getAllLeaves);
+router.get("/getAllLeaves",verifyToken, authorizeRole(["admin", "superadmin", "user"]), getAllLeaves);
+;
 router.get("/getleave/:id",verifyToken,authorizeRole(["admin", "superadmin", "user"]), getLeaveById);
 router.delete("/deleteLeave/:id",verifyToken,authorizeRole(["admin", "superadmin", "user"]),deleteLeave);
 router.put("/updateLeave/:id",verifyToken,authorizeRole(["admin","superadmin","user"]),validate(createLeaveSchema),updateLeave);

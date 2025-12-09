@@ -237,6 +237,22 @@ Role.belongsTo(Department, {
 });
 
 // --------------------------------------------------------
+// Employee ↔ PersonnelEmployee  (1 : 1 or 1 : Many)  
+// Employee.emp_id  <->  PersonnelEmployee.emp_code
+// --------------------------------------------------------
+Employee.hasOne(PersonnelEmployee, {
+  foreignKey: "emp_code",
+  sourceKey: "emp_id",
+  as: "attendance",
+});
+
+PersonnelEmployee.belongsTo(Employee, {
+  foreignKey: "emp_code",
+  targetKey: "emp_id",
+  as: "employee",
+});
+
+// --------------------------------------------------------
 // Employee → PersonnelEmployee   (attendance profile)
 // --------------------------------------------------------
 // Employee.belongsTo(PersonnelEmployee, {

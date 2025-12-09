@@ -7,8 +7,7 @@ const RoleApi = {
   create: (data) => Api.post("role/createRole", data),
 
   // ✅ Get all roles
-  getAll: () => Api.get("role/getAllRoles"),
-
+  getAll: (page = 1, limit = 10) => Api.get("role/getAllRoles", { params: { page, limit } }),
   // ✅ Get role by ID
   getById: (id) => Api.get(`/role/getRoleById/${id}`),
 

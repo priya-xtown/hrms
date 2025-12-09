@@ -16,9 +16,8 @@ const router = express.Router();
 
 // ✅ CREATE attendance
 router.post(
-  "/createatAttendance",verifyToken,authorizeRole(["admin", "superadmin", "user"]),validate(createAttendanceSchema),
+  "/createAttendance",verifyToken,authorizeRole(["admin", "superadmin", "user"]),validate(createAttendanceSchema),createAttendance);
 
-);
 router.get("/getAllAttendance", verifyToken,authorizeRole(["admin","superadmin","user"]), validate(getattendanceSchema),getAllAttendance)
 // router.get("/getbyId/:id",)
 // validate(),getbyId
@@ -47,8 +46,8 @@ router.get("/getAllAttendance", verifyToken,authorizeRole(["admin","superadmin",
 
 
 
-  "/createAttendance",verifyToken,authorizeRole(["admin", "superadmin", "user"]),validate(createAttendanceSchema),
-  createAttendance
+  // "/createAttendance",verifyToken,authorizeRole(["admin", "superadmin", "user"]),validate(createAttendanceSchema),
+  // createAttendance
 
 router.get("/getAllAttendance",verifyToken,authorizeRole(["admin", "superadmin", "user"]),validate(getattendanceSchema),getAllAttendance)
 

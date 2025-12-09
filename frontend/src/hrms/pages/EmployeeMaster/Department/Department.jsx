@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -36,48 +35,37 @@ export default function Departments() {
   const [total, setTotal] = useState(0);
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
+  
+const fetchDepartments = async (page = 1) => {
+  try {
+    setLoading(true);
 
-  const fetchDepartments = async (page = 1) => {
-    try {
-      setLoading(true);
-      const res = await DepartmentApi.getAll(page, pageSize);
-      console.log("✅ Department list response:", res.data);
+    const res = await DepartmentApi.getAll(page, pageSize);
 
-      let rows = [];
-      let count = 0;
+    console.log("🔍 API response:", res.data);
 
-      if (res?.data) {
-        if (Array.isArray(res.data.rows)) {
-          rows = res.data.rows;
-          count = typeof res.data.count === "number" ? res.data.count : res.data.rows.length;
-        } else if (Array.isArray(res.data)) {
-          rows = res.data;
-          count = res.data.length;
-        } else if (Array.isArray(res.data?.departments)) {
-          rows = res.data.departments;
-          count = res.data.departments.length;
-        } else if (Array.isArray(res.data?.data)) {
-          rows = res.data.data;
-          count = res.data.data.length;
-        }
-      }
+    const rows = res.data.rows || [];
+    const count = res.data.count || rows.length;
 
-      setDepartments(rows);
-      setTotal(count);
-      setCurrentPage(page);
-    } catch (err) {
-      console.error("❌ Error fetching departments:", err);
-      message.error(err.response?.data?.message || "Failed to fetch departments");
-    } finally {
-      setLoading(false);
-    }
-  };
+    setDepartments(rows);
+    setTotal(count);
+
+    // ❌ REMOVE: setCurrentPage(page)
+    // React already updates page via onChange / Prev-Next
+  } catch (err) {
+    console.error("❌ Error fetching departments:", err);
+    message.error(err.response?.data?.message || "Failed to fetch departments");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // ✅ Auto-fetch on component mount and when page changes
   useEffect(() => {
-    fetchDepartments(currentPage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage]);
+  fetchDepartments(currentPage);
+}, [currentPage]);
+
 
   // ✅ Get Department by ID
   const fetchDepartmentById = async (id) => {
@@ -153,6 +141,7 @@ const handleAdd = async (values) => {
     setLoading(false);
   }
 };
+
 // update
 const handleEdit = async (values) => {
   try {
@@ -281,16 +270,6 @@ const handleEdit = async (values) => {
     },
   ];
 
-  const menu = (
-    <Menu
-      items={[
-        { label: "Last 7 Days", key: "7" },
-        { label: "Last 30 Days", key: "30" },
-        { label: "All Time", key: "all" },
-      ]}
-    />
-  );
-
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-4">
@@ -308,49 +287,52 @@ const handleEdit = async (values) => {
       <div className="flex flex-wrap justify-between items-center bg-whit mb-4">
         <h2 className="font-semibold text-xl">Department List</h2>
         <div className="flex flex-wrap gap-2 items-center">
-          <Dropdown overlay={menu} trigger={["click"]}>
-            <Button>
-              Sort By: Last 7 Days <DownOutlined />
-            </Button>
-          </Dropdown>
+         
           <Search placeholder="Search" style={{ width: 200 }} />
         </div>
       </div>
 
       <div className="bg-white p-1 rounded-lg shadow">
-        <Table
-          columns={columns}
-          dataSource={filteredData}
-          pagination={{
-            current: currentPage,
-            pageSize: pageSize,
-            total: total,
-            onChange: (page) => setCurrentPage(page),
-            showSizeChanger: false,
-          }}
-          rowKey={(record) => record.id || record._id || record.department_id}
-          loading={loading}
-        />
 
-        <div className="flex justify-center items-center mt-4 gap-3">
-          <Button 
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} 
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
+<Table
+  columns={columns}
+  dataSource={filteredData}
+  pagination={{
+    current: currentPage,
+    pageSize: pageSize,
+    total: total,
+    showSizeChanger: false,
+    onChange: (page) => {
+      setCurrentPage(page);  // 🚀 triggers fetch via useEffect
+    },
+  }}
+  rowKey={(record) => record.id || record.department_id}
+/>
 
-          <span>
-            Page {currentPage} of {Math.max(1, Math.ceil(total / pageSize))}
-          </span>
+   <div className="flex justify-center items-center mt-4 gap-3">
+  <Button
+    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+    disabled={currentPage === 1}
+  >
+    Previous
+  </Button>
 
-          <Button
-            onClick={() => setCurrentPage((prev) => (prev < Math.ceil(total / pageSize) ? prev + 1 : prev))}
-            disabled={currentPage >= Math.ceil(total / pageSize)}
-          >
-            Next
-          </Button>
-        </div>
+  <span>
+    Page {currentPage} of {Math.max(1, Math.ceil(total / pageSize))}
+  </span>
+
+  <Button
+    onClick={() =>
+      setCurrentPage((prev) =>
+        prev < Math.ceil(total / pageSize) ? prev + 1 : prev
+      )
+    }
+    disabled={currentPage >= Math.ceil(total / pageSize)}
+  >
+    Next
+  </Button>
+</div>
+
       </div>
 
       {/* Add Modal */}

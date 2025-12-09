@@ -1,371 +1,863 @@
-// import React, { useState, useEffect } from "react";
-
+// import { useState, useEffect } from "react";
 // import {
-//   Form,
+//   Table,
+//   Dropdown,
 //   Input,
-//   Select,
+//   Popover,
 //   Button,
-//   TimePicker,
-//   Switch,
+//   Select,
 //   message,
+//   Tag,
+//   Space,
+//   Switch,  Card,
+//    Popconfirm,
 // } from "antd";
-
-
+// import {
+//   EyeOutlined,
+//   EditOutlined,
+//   DeleteOutlined,
+//   FilterOutlined,
+//   EllipsisOutlined,
+//   PlusOutlined,
+//   SettingOutlined,
+//   TableOutlined,
+//   AppstoreOutlined,
+// } from "@ant-design/icons";
+// import { useTheme } from "../../../context/ThemeContext";
 // import { useNavigate, useLocation } from "react-router-dom";
+// import { shiftService } from "./ShiftApi.js";
 
-// import dayjs from "dayjs";
+// const { Option } = Select;
 
+// const getUniqueValues = (data, key) => {
+//   if (key === "status") {
+//     return [...new Set(data.map((item) => item[key]))].filter(Boolean);
+//   }
+//   return [];
+// };
 
-// import { shiftService } from "../../services/shift";
+// const FiltersPopover = ({ onApply, dataSource, currentFilters }) => {
+//   const [filters, setFilters] = useState({
+//     status: currentFilters.status,
+//   });
 
-// const Shiftform = () => {
-//   const [form] = Form.useForm();
-//   const [isSubmitting, setIsSubmitting] = useState(false);
-//   const navigate = useNavigate();
-//   const [messageApi, contextHolder] = message.useMessage();
-//   const location = useLocation();
-//   const isEdit = location.state?.isEdit || false;
-//   const initialValues = location.state?.initialValues || {};;
+//   const statuses = getUniqueValues(dataSource, "status");
 
-//   useEffect(() => {
-//     if (isEdit && initialValues && Object.keys(initialValues).length) {
-//       form.setFieldsValue({
-//         shift_name: initialValues.shift_name,
+//   const onChange = (field, value) => {
+//     setFilters((prev) => ({
+//       ...prev,
+//       [field]: value,
+//     }));
+//   };
 
-//         shift_type: initialValues.shift_type,
-
-//         start_time: initialValues.start_time
-//           ? dayjs(initialValues.start_time, "HH:mm:ss")
-//           : null,
-
-//         end_time: initialValues.end_time
-//           ? dayjs(initialValues.end_time, "HH:mm:ss")
-//           : null,
-
-//         min_in_time: initialValues.min_in_time
-//           ? dayjs(initialValues.min_in_time, "HH:mm:ss")
-//           : null,
-
-//         max_out_time: initialValues.max_out_time
-//           ? dayjs(initialValues.max_out_time, "HH:mm:ss")
-//           : null,
-
-//         break_start_time: initialValues.break_start_time
-//           ? dayjs(initialValues.break_start_time, "HH:mm:ss")
-//           : null,
-
-//         break_end_time: initialValues.break_end_time
-//           ? dayjs(initialValues.break_end_time, "HH:mm:ss")
-//           : null,
-
-//         total_hours: initialValues.total_hours,
-
-//         is_night_shift: initialValues.is_night_shift || false,
-
-//         status: initialValues.status?.toLowerCase() || "inactive",
-//       });
-
+//   const renderPopoverContent = (field) => {
+//     let options = [];
+//     if (field === "status") {
+//       options = statuses;
 //     }
-//   }, [isEdit, initialValues, form]);
 
-
-//   const handleFormSubmit = async (values) => {
-//     setIsSubmitting(true);
-
-//     const formatTime = (time) => (time ? dayjs(time).format("HH:mm:ss") : null);
-
-//     const data = {
-//       shift_name: values.shift_name,
-
-//       shift_type: values.shift_type,
-
-//       start_time: formatTime(values.start_time),
-
-//       end_time: formatTime(values.end_time),
-
-//       min_in_time: formatTime(values.min_in_time),
-
-//       max_out_time: formatTime(values.max_out_time),
-
-//       break_start_time: formatTime(values.break_start_time),
-
-//       break_end_time: formatTime(values.break_end_time),
-
-//       total_hours: values.total_hours,
-
-//       is_night_shift: values.is_night_shift || false,
-
-//       status: isEdit ? values.status?.toLowerCase() || "inactive" : "active", // Default to 'active' for new shifts
-//     };
-
-//     try {
-//       if (isEdit) {
-//         await shiftService.updateShift(initialValues.shift_id, data);
-
-//         messageApi.success("Shift updated successfully");
-//       } else {
-//         await shiftService.createShift(data);
-
-//         messageApi.success("Shift created successfully");
-//       }
-
-//       form.resetFields();
-
-//       navigate("/hrms/pages/shift", {
-//         state: {
-//           message: isEdit
-//             ? "Shift updated successfully"
-//             : "Shift created successfully",
-//         },
-//       });
-//     } catch (error) {
-//       messageApi.error("Operation failed");
-
-//       console.error("Shift operation failed:", error);
-//     } finally {
-//       setIsSubmitting(false);
-//     }
+//     return (
+//       <div>
+//         <div style={{ marginBottom: 3, fontWeight: "bold", color: "#555" }}>
+//           {field.charAt(0).toUpperCase() + field.slice(1)}
+//         </div>
+//         <Select
+//           value={filters[field]}
+//           onChange={(val) => onChange(field, val)}
+//           placeholder={`Select ${
+//             field.charAt(0).toUpperCase() + field.slice(1)
+//           }`}
+//           style={{ width: 180 }}
+//           allowClear
+//         >
+//           {options.map((opt) => (
+//             <Option key={opt} value={opt}>
+//               {opt.charAt(0).toUpperCase() + opt.slice(1).toLowerCase()}
+//             </Option>
+//           ))}
+//         </Select>
+//       </div>
+//     );
 //   };
 
 //   return (
+//     <div style={{ padding: 10, width: 200, height: "auto" }}>
+//       {["status"].map((field) => (
+//         <div key={field} style={{ marginBottom: 15 }}>
+//           <Popover
+//             content={renderPopoverContent(field)}
+//             trigger="hover"
+//             placement="right"
+//             mouseEnterDelay={0.1}
+//             mouseLeaveDelay={0.1}
+//           >
+//             <div
+//               style={{
+//                 cursor: "pointer",
+//                 fontWeight: "bold",
+//                 width: 100,
+//                 color: filters[field] ? "#1890ff" : "inherit",
+//               }}
+//             >
+//               {field.charAt(0).toUpperCase() + field.slice(1)}
+//               {filters[field] && (
+//                 <span className="ml-2 text-xs text-gray-500">(1)</span>
+//               )}
+//             </div>
+//           </Popover>
+//         </div>
+//       ))}
+//       <div style={{ textAlign: "center", marginTop: 20 }} className="space-x-2">
+//         <Button
+//           danger
+//           size="small"
+//           onClick={() => {
+//             setFilters({});
+//             onApply({});
+//           }}
+//           disabled={Object.values(filters).every((val) => !val)}
+//         >
+//           Reset
+//         </Button>
+//         <Button
+//           type="primary"
+//           size="small"
+//           onClick={() => onApply(filters)}
+//           disabled={Object.values(filters).every((val) => !val)}
+//         >
+//           Apply
+//         </Button>
+//       </div>
+//     </div>
+//   );
+// };
+
+// const Shift = () => {
+//   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+//   const [pagination, setPagination] = useState({
+//     current: 1,
+//     pageSize: 10,
+//     total: 0,
+//   });
+//   const [searchText, setSearchText] = useState("");
+//   const [filters, setFilters] = useState({
+//     status: undefined,
+//   });
+//   const [shiftData, setShiftData] = useState([]);
+//   const [loading, setLoading] = useState(false);
+//   const { showCustomButton } = useTheme();
+//   const navigate = useNavigate();
+//   const [messageApi, contextHolder] = message.useMessage();
+//   const location = useLocation();
+//   const localStorageKey = "shiftVisibleColumns";
+
+//   // View Mode (Table / Card)
+//   const [viewMode, setViewMode] = useState(
+//     localStorage.getItem("shiftViewMode") || "table"
+//   );
+//   useEffect(() => {
+//     localStorage.setItem("shiftViewMode", viewMode);
+//   }, [viewMode]);
+
+//   const [visibleColumns, setVisibleColumns] = useState([
+//   "serialNumber",
+//   "shift_name",
+//   "start_time",
+//   "end_time",
+//   "break_start_time",
+//   "break_end_time",
+//   "total_hours",
+//   "status",
+//   "action",
+// ]);
+
+//   useEffect(() => {
+//     localStorage.setItem(localStorageKey, JSON.stringify(visibleColumns));
+//   }, [visibleColumns]);
+
+//   // ======================== FETCH SHIFTS API (GET ALL) =======================
+// const fetchShift = async (
+//   paginationParams = pagination,
+//   search = searchText,
+//   appliedFilters = filters
+// ) => {
+//   setLoading(true);
+
+//   try {
+//     // Backend fetch (full data)
+//     const response = await shiftService.getAllShifts(
+//       paginationParams.current,
+//       paginationParams.pageSize
+//     );
+
+//     let data = response?.data?.data || [];
+//     let total = response?.data?.total || 0;
+
+//     // ---------- FRONTEND SEARCH ----------
+//     if (search) {
+//       data = data.filter((item) =>
+//         item.shift_name?.toLowerCase().includes(search.toLowerCase())
+//       );
+//     }
+
+//     // ---------- FRONTEND FILTER ----------
+//     if (appliedFilters.status) {
+//       data = data.filter((item) => item.status === appliedFilters.status);
+//     }
+
+//     // Update total after all filters
+//     total = data.length;
+
+//     // ---------- FRONTEND PAGINATION ----------
+//     const startIndex = (paginationParams.current - 1) * paginationParams.pageSize;
+//     const endIndex = startIndex + paginationParams.pageSize;
+//     const paginatedData = data.slice(startIndex, endIndex);
+
+//     setShiftData(paginatedData);
+
+//     setPagination({
+//       current: paginationParams.current,
+//       pageSize: paginationParams.pageSize,
+//       total: total,
+//     });
+
+//   } catch (error) {
+//     console.error("Error fetching shift data:", error);
+//     messageApi.error("Failed to fetch shifts");
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+
+//   // ========================= GET ALL SHIFTS END ==============================
+//   // INITIAL LOAD
+//   useEffect(() => {
+//     fetchShift();
+//   }, []);
+
+
+//   // FORM SUCCESS MESSAGE AFTER ADD/EDIT
+//   useEffect(() => {
+//     if (location.state?.message) {
+//       messageApi.success(location.state.message);
+//       const { message, ...rest } = location.state;
+//       window.history.replaceState({ ...rest }, document.title);
+//     }
+//   }, [location.state, messageApi]);
+
+
+//   // SEARCH FUNCTION
+//   const handleSearchChange = (e) => {
+//     const value = e.target.value;
+//     setSearchText(value);
+//     setPagination((prev) => ({ ...prev, current: 1 }));
+//     fetchShift({ ...pagination, current: 1 }, value, filters);
+//   };
+
+//   // APPLY FILTERS
+//   const handleFilterApply = (newFilters) => {
+//     setFilters(newFilters);
+//     setPagination((prev) => ({ ...prev, current: 1 }));
+//     fetchShift({ ...pagination, current: 1 }, searchText, newFilters);
+//   };
+
+//   // PAGINATION CHANGE
+//   const handleTableChange = (newPagination) => {
+//     setPagination(newPagination);
+//     fetchShift(newPagination, searchText, filters);
+//   };
+
+//   // ========================= EDIT SHIFT END ==================================
+
+// const handleEdit = async (record) => {
+//   try {
+//     const id = record.shift_id;
+
+//     if (!id) {
+//       messageApi.error("Invalid shift ID");
+//       return;
+//     }
+
+//     const response = await shiftService.getShiftById(id);
+//     const shiftData = response?.data?.data;
+
+//     if (!shiftData) {
+//       messageApi.error("Failed to load shift details");
+//       return;
+//     }
+
+//     messageApi.success("Shift loaded successfully");
+
+//     navigate("/hrms/pages/createshift", {
+//       state: {
+//         isEdit: true,
+//         initialValues: shiftData,
+//       },
+//     });
+
+//   } catch (error) {
+//     messageApi.error(
+//       error?.response?.data?.message || "Failed to load shift details"
+//     );
+//   }
+// };
+
+// // ========================= DELETE SHIFT START ================================
+// const handleDelete = async (record) => {
+//   try {
+//     const id = record.shift_id;
+
+//     if (!id) {
+//       messageApi.error("Invalid shift ID");
+//       return;
+//     }
+
+//     await shiftService.deleteShift(id);
+//     messageApi.success("Shift deleted successfully");
+//     fetchShift();
+//   } catch (error) {
+//     const errMsg =
+//       error?.response?.data?.message ||
+//       error?.message ||
+//       "Failed to delete shift";
+
+//     messageApi.error(errMsg);
+//   }
+// };
+
+//   const allColumns = [
+//   {
+//     title: "S.No",
+//     key: "serialNumber",
+//     width: 70,
+//     render: (_, _record, index) =>
+//       (pagination.current - 1) * pagination.pageSize + index + 1,
+//   },
+//   {
+//     title: "Shift Name",
+//     key: "shift_name",
+//     dataIndex: "shift_name",
+//     render: (text) => text.charAt(0).toUpperCase() + text.slice(1),
+//   },
+//   {
+//     title: "Start Time",
+//     key: "start_time",
+//     dataIndex: "start_time",
+//     render: (text) => (text ? text.slice(0, 5) : "--:--"),
+//   },
+//   {
+//     title: "End Time",
+//     key: "end_time",
+//     dataIndex: "end_time",
+//     render: (text) => (text ? text.slice(0, 5) : "--:--"),
+//   },
+//   {
+//     title: "Break Start",
+//     key: "break_start_time",
+//     dataIndex: "break_start_time",
+//     render: (text) => (text ? text.slice(0, 5) : "--:--"),
+//   },
+//   {
+//     title: "Break End",
+//     key: "break_end_time",
+//     dataIndex: "break_end_time",
+//     render: (text) => (text ? text.slice(0, 5) : "--:--"),
+//   },
+//   {
+//     title: "Total Hours",
+//     key: "total_hours",
+//     dataIndex: "total_hours",
+//   },
+//   {
+//     title: "Status",
+//     key: "status",
+//     dataIndex: "status",
+//     render: (text) => (
+//       <Tag color={text === "active" ? "green" : "red"}>
+//         {text.charAt(0).toUpperCase() + text.slice(1)}
+//       </Tag>
+//     ),
+//   },
+//     {
+//       title: "Actions",
+//       key: "action",
+//       render: (_, record) => (
+//         <Space>
+//           <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+//           <Popconfirm
+//             title="Delete?"
+//            onConfirm={() => handleDelete(record)}
+
+//             okText="Yes"
+//             cancelText="No"
+//           >
+//             <Button danger icon={<DeleteOutlined />} />
+//           </Popconfirm>
+//         </Space>
+//       ),
+//     },
+// ];
+
+//   // ====================== ALL TABLE COLUMNS END ============================
+
+//   // Filter visible columns
+//   const columns = allColumns.filter((col) =>
+//     visibleColumns.includes(col.dataIndex || col.key)
+//   );
+
+//   // ======================= TABLE SECTION START ==========================
+//   return (
 //     <>
 //       {contextHolder}
+//       <div className="max-w-full overflow-hidden">
+//         <div className="bg-white">
+//           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
+//             <h2 className="font-semibold text-xl">Shift</h2>
+//             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+//               <div className="w-full sm:w-[250px] min-w-[200px]">
+//                 <Input.Search
+//                   placeholder="Search by name"
+//                   value={searchText}
+//                   onChange={handleSearchChange}
+//                   className="w-full"
+//                   allowClear
+//                 />
+//               </div>
 
-//       <div className="p-6 max-w-6xl mx-auto rounded">
-//         <h2 className="text-xl font-semibold mb-4">
-//           {isEdit ? "Edit Shift" : "Add Shift"}
-//         </h2>
+//               <div className="flex gap-2 w-full sm:w-auto justify-stretch sm:justify-end">
+//                 <Popover
+//                   content={
+//                     <FiltersPopover
+//                       dataSource={shiftData}
+//                       currentFilters={filters}
+//                       onApply={handleFilterApply}
+//                     />
+//                   }
+//                   trigger="click"
+//                   placement="bottomLeft"
+//                 >
+//                   <Button
+//                     icon={<FilterOutlined />}
+//                     className="w-full sm:w-auto"
+//                   >
+//                     Filters
+//                   </Button>
+//                 </Popover>
 
-//         <Form
-//           layout="vertical"
-//           form={form}
-//           onFinish={handleFormSubmit}
-//           initialValues={{ status: "active", is_night_shift: false }}
+//                 {/* ======================= ADD SHIFT BUTTON (CREATE) ======================= */}
+//                 <Button
+//                   type="primary"
+//                   icon={<PlusOutlined />}
+//                   onClick={() => navigate("/hrms/pages/createshift")}
+//                 >
+//                   Add Shift
+//                 </Button>
+//                 {/* ======================= ADD SHIFT END ================================ */}
 
-//         >
-//           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-//             <Form.Item
-//               name="shift_name"
-//               label="Shift Name"
-//               rules={[{ required: true, message: "Please enter shift name" }]}
-//             >
-//               <Select style={{ width: 220 }} placeholder="Enter Shift name">
-//                 <Select.Option value="day">Day Shift</Select.Option>
-//                 <Select.Option value="night">Night Shift</Select.Option>
-//               </Select>
-//             </Form.Item>
-
-//             <Form.Item
-//               name="start_time"
-//               label="Start Time"
-//               rules={[
-//                 { required: true, message: "Please select start time" },
-//               ]}
-//             >
-//               <TimePicker style={{ width: 220 }} format="HH:mm:ss" className="w-full" />
-//             </Form.Item>
-
-
-//             <Form.Item
-//               name="end_time"
-//               label="End Time"
-//               rules={[{ required: true, message: "Please select end time" }]}
-//             >
-//               <TimePicker style={{ width: 220 }} format="HH:mm:ss" className="w-full" />
-//             </Form.Item>
-
-//             <Form.Item name="break_start_time" label="Break Start Time">
-//               <TimePicker style={{ width: 220 }} format="HH:mm:ss" className="w-full" />
-//             </Form.Item>
-
-
-//             <Form.Item name="break_end_time" label="Break End Time">
-//               <TimePicker style={{ width: 220 }} format="HH:mm:ss" className="w-full" />
-//             </Form.Item>
-
-
-//             <Form.Item name="total_hours" label="Total Hours">
-//               <Input style={{ width: 220 }}
-//                 type="number"
-//                 step="0.1"
-//                 placeholder="Enter total hours e.g. 8.5"
-//               />
-//             </Form.Item>
-
-//             <Form.Item
-//               name="min_in_time"
-//               label="Minimum In Time"
-//               rules={[
-//                 { required: true, message: "Please select minimum in time" },
-//               ]}
-//             >
-//               <TimePicker style={{ width: 220 }} format="HH:mm:ss" className="w-full" />
-//             </Form.Item>
-
-//             <Form.Item
-//               name="max_out_time"
-//               label="Maximum Out Time"
-//               rules={[
-//                 { required: true, message: "Please select maximum out time" },
-//               ]}
-//             >
-//               <TimePicker style={{ width: 220 }} format="HH:mm:ss" className="w-full" />
-//             </Form.Item>
-
-//             <Form.Item
-//               name="status"
-//               label="Status"
-//               rules={[{ required: true, message: "Please select status" }]}
-//             >
-//               <Select style={{ width: 220 }} placeholder="Select status">
-//                 <Select.Option value="active">Active</Select.Option>
-
-//                 <Select.Option value="inactive">Inactive</Select.Option>
-//               </Select>
-//             </Form.Item>
+//                 {/* COLUMN SETTINGS */}
+//                 {showCustomButton && (
+//                   <Dropdown
+//                     menu={{
+//                       items: allColumns.map((col) => ({
+//                         key: col.dataIndex || col.key,
+//                         label: (
+//                           <Space>
+//                             <Switch
+//                               checked={visibleColumns.includes(
+//                                 col.dataIndex || col.key
+//                               )}
+//                               onChange={(checked) => {
+//                                 if (checked) {
+//                                   setVisibleColumns([
+//                                     ...visibleColumns,
+//                                     col.dataIndex || col.key,
+//                                   ]);
+//                                 } else {
+//                                   setVisibleColumns(
+//                                     visibleColumns.filter(
+//                                       (k) => k !== (col.dataIndex || col.key)
+//                                     )
+//                                   );
+//                                 }
+//                               }}
+//                             />
+//                             {col.title}
+//                           </Space>
+//                         ),
+//                       })),
+//                     }}
+//                   >
+//                     <Button icon={<SettingOutlined />}></Button>
+//                   </Dropdown>
+//                 )}
+//               </div>
+//             </div>
 //           </div>
+//         </div>
 
-//           <Form.Item
-//             name="status"
-//             label="Status"
-//             rules={[{ required: true, message: "Please select status" }]}
-//           >
-//             <Select placeholder="Select status">
-//               <Select.Option value="active">Active</Select.Option>
-
-//               <Select.Option value="inactive">Inactive</Select.Option>
-//             </Select>
-//           </Form.Item>
-
-
-//           <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4">
-//             <Button
-
-//               danger
-//               onClick={() => navigate("/hrms/pages/shift")}
-
-//               className="w-full sm:w-auto"
-//             >
-//               Cancel
-//             </Button>
-
-
-//             <Button
-//               type="primary"
-//               htmlType="submit"
-//               loading={isSubmitting}
-
-//               className="w-full sm:w-auto"
-//             >
-//               Submit
-//             </Button>
+//         {/* ========================= TABLE VIEW START ============================ */}
+//         {viewMode === "table" ? (
+//           <div className="overflow-x-auto">
+//             <Table
+//               columns={columns}
+//               dataSource={shiftData}
+//               size="small"
+//               pagination={{
+//                 ...pagination,
+//                 responsive: true,
+//                 showSizeChanger: true,
+//                 showTotal: (total, range) =>
+//                   `${range[0]}-${range[1]} of ${total} items`,
+//               }}
+//               onChange={handleTableChange}
+//               rowKey="shift_id"
+//               scroll={{ x: "max-content" }}
+//               className="w-full"
+//               loading={loading}
+//               components={{
+//                 header: {
+//                   cell: (props) => (
+//                     <th
+//                       {...props}
+//                       style={{
+//                         position: "sticky",
+//                         top: 0,
+//                         zIndex: 2,
+//                         padding: "8px 8px",
+//                         whiteSpace: "nowrap",
+//                       }}
+//                     />
+//                   ),
+//                 },
+//               }}
+//             />
 //           </div>
-//         </Form>
+//         ) : (
+//           <>
+//             {/* ========================= CARD VIEW START ============================ */}
+//             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+//               {shiftData.length ? (
+//                 shiftData.map((rec, idx) => (
+//                   <Card
+//                     key={rec.id}
+//                     title={`${
+//                       (pagination.current - 1) * pagination.pageSize + idx + 1
+//                     }. ${rec.shift_name}`}
+//                   >
+//                     <p>
+//                       <strong>Start Time:</strong>{" "}
+//                       {rec.start_time ? rec.start_time.slice(0, 5) : "--:--"}
+//                     </p>
+//                     <p>
+//                       <strong>End Time:</strong>{" "}
+//                       {rec.end_time ? rec.end_time.slice(0, 5) : "--:--"}
+//                     </p>
+//                     <p>
+//                       <strong>Status:</strong>{" "}
+//                       <Tag color={rec.status === "active" ? "green" : "red"}>
+//                         {rec.status}
+//                       </Tag>
+//                     </p>
 
+//                    <Dropdown
+//   menu={{
+//     items: [
+//       {
+//         key: "edit",
+//         icon: <EditOutlined />,
+//         label: "Edit",
+//         onClick: () => handleEdit(rec),
+//       },
+//       {
+//         key: "delete",
+//         icon: <DeleteOutlined />,
+//         label: "Delete",
+//         onClick: () => handleDelete(rec),
+//       },
+//     ],
+//   }}
+//   trigger={["click"]}
+// >
+//   <EllipsisOutlined className="cursor-pointer text-lg rotate-90" />
+// </Dropdown>
+
+//                   </Card>
+//                 ))
+//               ) : (
+//                 <div className="py-10 text-center col-span-full">
+//                   No shifts found
+//                 </div>
+//               )}
+//             </div>
+//             {/* ========================= CARD VIEW END ============================== */}
+//           </>
+//         )}
+//         {/* ========================= TABLE VIEW END ============================ */}
 //       </div>
 //     </>
 //   );
 // };
 
-// export default Shiftform;
-
-========================================================
-
-// ========================= DELETE SHIFT END =================================
+// export default Shift;
 
 
-  // const handleMenuClick = (record, e) => {
-  //   if (e.key === "edit") return handleEdit(record);
-  //   if (e.key === "delete") return handleDelete(record);
-  //   // if (e.key === "view") {
-  //   //   console.log("View:", record);
-  //   // }
-  // };
+
+// ========================== SHIFT WITH REAL PAGINATION ==========================
+
+// import { useState, useEffect } from "react";
+// import {
+//   Table,
+//   Dropdown,
+//   Input,
+//   Popover,
+//   Button,
+//   Select,
+//   message,
+//   Tag,
+//   Space,
+//   Switch,
+//   Card,
+//   Popconfirm,
+// } from "antd";
+
+// import {
+//   EditOutlined,
+//   DeleteOutlined,
+//   FilterOutlined,
+//   EllipsisOutlined,
+//   PlusOutlined,
+//   SettingOutlined,
+// } from "@ant-design/icons";
+
+// import { useTheme } from "../../../context/ThemeContext";
+// import { useNavigate, useLocation } from "react-router-dom";
+// import { shiftService } from "./ShiftApi";
+
+// const { Option } = Select;
+
+// export default function Shift() {
+//   const [shiftData, setShiftData] = useState([]);
+//   const [loading, setLoading] = useState(false);
+
+//   const [pagination, setPagination] = useState({
+//     current: 1,
+//     pageSize: 10,
+//     total: 0,
+//   });
+
+//   const [searchText, setSearchText] = useState("");
+//   const [filters, setFilters] = useState({ status: "All" });
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const navigate = useNavigate();
+//   const [messageApi, contextHolder] = message.useMessage();
+//   const location = useLocation();
+//   const { showCustomButton } = useTheme();
+//  const [total, setTotal] = useState(0);
+//  const [pageSize] = useState(10);
+//   // ======================== REAL API PAGINATION ==========================
+//   const fetchShift = async (page = 1) => {
+//     try {
+//       setLoading(true);
+
+//       const res = await shiftService.getAllShifts(page, pagination.pageSize);
+
+//       console.log("SHIFT RESPONSE", res.data);
+
+//       const rows = res.data.data || [];
+//       const count = res.data.total || rows.length;
+
+//       setShiftData(rows);
+//       setPagination((p) => ({
+//         ...p,
+//         current: page,
+//         total: count,
+//       }));
+//     } catch (err) {
+//       console.error("❌ Shift fetch error:", err);
+//       messageApi.error(err.response?.data?.message || "Failed to fetch shifts");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   // auto run
+//   useEffect(() => {
+//     fetchShift(pagination.current);
+//   }, [pagination.current]);
+
+//   // ========================= TABLE PAGINATION CHANGE ==========================
+//   const handleTableChange = (newPagination) => {
+//     setPagination((prev) => ({
+//       ...prev,
+//       current: newPagination.current,
+//       pageSize: newPagination.pageSize,
+//     }));
+//   };
+
+//   // ========================= SEARCH ==========================
+//   const handleSearchChange = (e) => {
+//     const value = e.target.value;
+//     setSearchText(value);
+//     setPagination((p) => ({ ...p, current: 1 }));
+//     fetchShift(1);
+//   };
+
+//   // ========================= EDIT SHIFT ==========================
+//   const handleEdit = async (record) => {
+//     try {
+//       const id = record.shift_id;
+//       if (!id) return messageApi.error("Invalid shift ID");
+
+//       const res = await shiftService.getShiftById(id);
+//       const data = res.data.data;
+
+//       navigate("/hrms/pages/createshift", {
+//         state: { isEdit: true, initialValues: data },
+//       });
+//     } catch (err) {
+//       messageApi.error("Failed to load shift");
+//     }
+//   };
+
+//   // ========================= DELETE SHIFT ==========================
+//   const handleDelete = async (record) => {
+//     try {
+//       const id = record.shift_id;
+//       await shiftService.deleteShift(id);
+
+//       messageApi.success("Shift deleted");
+
+//       const newTotal = Math.max(0, pagination.total - 1);
+//       const maxPage = Math.max(1, Math.ceil(newTotal / pagination.pageSize));
+
+//       const pageToLoad =
+//         pagination.current > maxPage ? maxPage : pagination.current;
+
+//       setPagination((p) => ({
+//         ...p,
+//         total: newTotal,
+//         current: pageToLoad,
+//       }));
+
+//       fetchShift(pageToLoad);
+//     } catch (err) {
+//       messageApi.error("Delete failed");
+//     }
+//   };
+
+//   // ============================= COLUMNS =============================
+//   const columns = [
+//     {
+//       title: "S.No",
+//       render: (_, __, index) =>
+//         (pagination.current - 1) * pagination.pageSize + index + 1,
+//     },
+//     {
+//       title: "Shift Name",
+//       dataIndex: "shift_name",
+//       render: (t) => t?.charAt(0).toUpperCase() + t.slice(1),
+//     },
+//     {
+//       title: "Start Time",
+//       dataIndex: "start_time",
+//       render: (t) => (t ? t.slice(0, 5) : "--"),
+//     },
+//     {
+//       title: "End Time",
+//       dataIndex: "end_time",
+//       render: (t) => (t ? t.slice(0, 5) : "--"),
+//     },
+//     {
+//       title: "Status",
+//       dataIndex: "status",
+//       render: (t) => (
+//         <Tag color={t === "active" ? "green" : "red"}>
+//           {t?.toUpperCase()}
+//         </Tag>
+//       ),
+//     },
+//     {
+//       title: "Actions",
+//       render: (_, rec) => (
+//         <Space>
+//           <Button icon={<EditOutlined />} onClick={() => handleEdit(rec)} />
+
+//           <Popconfirm
+//             title="Delete?"
+//             onConfirm={() => handleDelete(rec)}
+//             okText="Yes"
+//             cancelText="No"
+//           >
+//             <Button danger icon={<DeleteOutlined />} />
+//           </Popconfirm>
+//         </Space>
+//       ),
+//     },
+//   ];
+
+//   return (
+//     <>
+//       {contextHolder}
+
+//       <Input.Search
+//         placeholder="Search shift"
+//         value={searchText}
+//         onChange={handleSearchChange}
+//         allowClear
+//         className="mb-3"
+//       />
+
+//       <Button
+//         type="primary"
+//         icon={<PlusOutlined />}
+//         onClick={() => navigate("/hrms/pages/createshift")}
+//         className="mb-3"
+//       >
+//         Add Shift
+//       </Button>
+
+//       <Table
+//         columns={columns}
+//         dataSource={shiftData}
+//         loading={loading}
+//         rowKey="shift_id"
+//         pagination={{
+//           current: pagination.current,
+//           pageSize: pagination.pageSize,
+//           total: pagination.total,
+//           showSizeChanger: false,
+//           showTotal: (t) => `Total ${t} items`,
+//         }}
+//         onChange={handleTableChange}
+//       />
+
+//       <div className="flex justify-center items-center mt-4 gap-3">
+//         <Button
+//           onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+//           disabled={currentPage === 1}
+//         >
+//           Previous
+//         </Button>
+
+//         <span>
+//           Page {currentPage} of {Math.max(1, Math.ceil(total / pageSize))}
+//         </span>
+
+//         <Button
+//           onClick={() =>
+//             setCurrentPage((prev) =>
+//               prev < Math.ceil(total / pageSize) ? prev + 1 : prev
+//             )
+//           }
+//           disabled={currentPage >= Math.ceil(total / pageSize)}
+//         >
+//           Next
+//         </Button>
+//       </div>
+
+//     </>
+//   );
+// }
 
 
-  // ====================== ALL TABLE COLUMNS START ============================
-  // const allColumns = [
-  //   {
-  //     title: "S.No",
-  //     key: "serialNumber",
-  //     width: 70,
-  //     render: (_, _record, index) =>
-  //       (pagination.current - 1) * pagination.pageSize + index + 1,
-  //   },
-
-  //   {
-  //     title: "Shift Name",
-  //     key: "shift_name",
-  //     render: (_, record) => {
-  //       const name = record.shift_name || "";
-  //       return name.charAt(0).toUpperCase() + name.slice(1);
-  //     },
-  //   },
-  //   {
-  //     title: "Start Time",
-  //     key: "start_time",
-  //     render: (_, record) => {
-  //       const time = record.start_time || "";
-  //       return time ? time.slice(0, 5) : "--:--";
-  //     },
-  //   },
-  //   {
-  //     title: "End Time",
-  //     key: "end_time",
-  //     render: (_, record) => {
-  //       const time = record.end_time || "";
-  //       return time ? time.slice(0, 5) : "--:--";
-  //     },
-  //   },
-  //   {
-  //     title: "Status",
-  //     key: "status",
-  //     render: (_, record) => {
-  //       const status = record.status || "";
-  //       const label = status.charAt(0).toUpperCase() + status.slice(1);
-  //       if (!status) return label;
-  //       return <Tag color={status === "active" ? "green" : "red"}>{label}</Tag>;
-  //     },
-  //   },
-  //   {
-  //     title: "Action",
-  //     key: "action",
-  //     render: (_, rec) => (
-  //       <Dropdown
-  //         menu={{
-  //           items: [
-  //             {
-  //               key: "view",
-  //               icon: <EyeOutlined />,
-  //               label: "View",
-  //               onClick: () => handleMenuClick(rec, { key: "view" }),
-  //             },
-  //             {
-  //               key: "edit",
-  //               icon: <EditOutlined />,
-  //               label: "Edit",
-  //               onClick: () => handleMenuClick(rec, { key: "edit" }),
-  //             },
-  //             {
-  //               key: "delete",
-  //               icon: <DeleteOutlined />,
-  //               label: "Delete",
-  //               onClick: () => handleMenuClick(rec, { key: "delete" }),
-  //             },
-  //           ],
-  //         }}
-  //         trigger={["click"]}
-  //       >
-  //         <EllipsisOutlined className="cursor-pointer text-lg rotate-90" />
-  //       </Dropdown>
-  //     ),
-  //   },
-  // ];
-
-  ======================
-
-    // const handleEdit = (record) => {
-  //   navigate("/hrms/pages/shiftcreate", {
-  //     state: { isEdit: true, initialValues: record }, // GET BY ID VALUES PASSED
-  //   });
-  // };

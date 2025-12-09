@@ -66,14 +66,6 @@ class BaseService {
     return await record.update(data);
   }
 
-  // Delete record by ID
-//   async delete(id) {
-//     const record = await this.Model.findByPk(id);
-//     if (!record) throw new Error(`${this.Model.name} not found`);
-//     await record.destroy();
-//     return { message: `${this.Model.name} deleted successfully` };
-//   }
-// }
 
 
 async delete(id) {

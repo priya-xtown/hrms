@@ -922,31 +922,31 @@ export const getEmployeeDetById = async (req, res) => {
 };
 
 
-// ✅ 1. Registered Employees
-export const getRegisteredEmployees = async (req, res) => {
-  try {
-    const employees = await Employee.findAll({
-      where: { deleted_at: null },
-      include: [
-        {
-          model: EmployeeDetails,
-          as: "details",
-          required: true, // INNER JOIN (only registered)
-        },
-      ],
-    });
+// // ✅ 1. Registered Employees
+// export const getRegisteredEmployees = async (req, res) => {
+//   try {
+//     const employees = await Employee.findAll({
+//       where: { deleted_at: null },
+//       include: [
+//         {
+//           model: EmployeeDetails,
+//           as: "details",
+//           required: true, // INNER JOIN (only registered)
+//         },
+//       ],
+//     });
 
-    return res.status(200).json({
-      message: "Registered employees fetched successfully",
-      data: employees,
-    });
-  } catch (error) {
-    console.error("❌ Error in getRegisteredEmployees:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
+//     return res.status(200).json({
+//       message: "Registered employees fetched successfully",
+//       data: employees,
+//     });
+//   } catch (error) {
+//     console.error("❌ Error in getRegisteredEmployees:", error);
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
 
-// ✅ 2. Unregistered Employees
+// // // ✅ 2. Unregistered Employees
 export const getUnregisteredEmployees = async (req, res) => {
   try {
     const employees = await Employee.findAll({
@@ -972,6 +972,112 @@ export const getUnregisteredEmployees = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+// ✅ Registered Employees (Paginated + Search + Sorting)
+export const getRegisteredEmployees = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const search = req.query.search || "";
+    const orderBy = req.query.orderBy || "createdAt";
+    const order = req.query.order || "ASC";
+
+    const employees = await Employee.findAndCountAll({
+      where: {
+        deleted_at: null,
+        ...(search && {
+          [Op.or]: [
+            { first_name: { [Op.like]: `%${search}%` } },
+            { last_name: { [Op.like]: `%${search}%` } },
+            { emp_id: { [Op.like]: `%${search}%` } },
+            { attendance_id: { [Op.like]: `%${search}%` } },
+          ],
+        }),
+      },
+      include: [
+        {
+          model: EmployeeDetails,
+          as: "details",
+          required: true, // inner join => registered only
+        },
+      ],
+      order: [[orderBy, order]],
+      limit,
+      offset,
+    });
+
+    return res.status(200).json({
+      message: "Registered employees fetched successfully",
+      rows: employees.rows,
+      count: employees.count,
+      page,
+      limit,
+      totalPages: Math.ceil(employees.count / limit),
+    });
+  } catch (error) {
+    console.error("❌ Error in getRegisteredEmployees:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// export const getUnregisteredEmployees = async (req, res) => {
+//   try {
+//     let { page = 1, limit = 10 } = req.query;
+
+//     page = parseInt(page);
+//     limit = parseInt(limit);
+//     const offset = (page - 1) * limit;
+
+//     // ---------- 1) TOTAL COUNT (SAFE) ---------- //
+//     const total = await Employee.count({
+//       where: { deleted_at: null },
+//       include: [
+//         {
+//           model: EmployeeDetails,
+//           as: "details",
+//           required: false,
+//         },
+//       ],
+//       distinct: true,
+//       col: "Employee.id",
+//       having: sequelize.literal("details.id IS NULL"),
+//       subQuery: false,
+//     });
+
+//     // ---------- 2) PAGINATED RESULT ---------- //
+//     const employees = await Employee.findAll({
+//       where: { deleted_at: null },
+//       include: [
+//         {
+//           model: EmployeeDetails,
+//           as: "details",
+//           required: false,
+//         },
+//       ],
+//       having: sequelize.literal("details.id IS NULL"),
+//       offset,
+//       limit,
+//       subQuery: false,
+//     });
+
+//     return res.status(200).json({
+//       message: "Unregistered employees fetched successfully",
+//       total,
+//       page,
+//       limit,
+//       totalPages: Math.ceil(total / limit),
+//       data: employees,
+//     });
+
+//   } catch (error) {
+//     console.error("❌ Error in getUnregisteredEmployees:", error);
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
+
+
 
 
 

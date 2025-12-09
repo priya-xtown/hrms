@@ -1,5 +1,5 @@
 import express from 'express';
-import companyRoutes from './companyasset.routes.js';
+import companyRoutes from '../routes/companyasset.routes.js';
 
 const router = express.Router();
 

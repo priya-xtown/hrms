@@ -1,21 +1,11 @@
-import api from "../../../services/api"; // ✅ Adjust the path as needed
+import api from "../../../services/api";
 
-// OD Service
 const AttenOd = {
-  // Get all OD records
-  getAll: () => api.get("/od"),
-
-  // Get a single OD record by employeeId and date
-  getById: (employeeId, date) => api.get(`/od/${employeeId}/${date}`),
-
-  // Create a new OD record
-  create: (data) => api.post("/od", data),
-
-  // Update an existing OD record
-  update: (employeeId, date, data) => api.put(`/od/${employeeId}/${date}`, data),
-
-  // Delete an OD record
-  delete: (employeeId, date) => api.delete(`/od/${employeeId}/${date}`),
+  getAll: (params = {}) => api.get("addondutty/getAllAddondutty", { params }),
+  getById: (id) => api.get(`addondutty/getAddonduttyById/${id}`),
+  create: (data) => api.post("addondutty/createAddondutty", data),
+  update: (id, data) => api.put(`addondutty/updateAddondutty/${id}`, data),
+  delete: (id) => api.delete(`addondutty/deleteAddondutty/${id}`),
 };
 
 export default AttenOd;

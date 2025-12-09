@@ -1,426 +1,480 @@
-// ========================================================
-// ================ SHIFT PAGE (LIST + TABLE) ==============
-// ========================================================
+// import { useState, useEffect } from "react";
+// import {
+//   Table,
+//   Input,
+//   Button,
+//   message,
+//   Tag,
+//   Space,
+//   Popconfirm,
+//   Popover,
+// } from "antd";
+
+// import {
+//   EditOutlined,
+//   DeleteOutlined,
+//   PlusOutlined,
+// } from "@ant-design/icons";
+
+// import { useTheme } from "../../../context/ThemeContext";
+// import { useNavigate } from "react-router-dom";
+// import { shiftService } from "./ShiftApi";
+
+// export default function Shift() {
+//   const [shiftData, setShiftData] = useState([]);
+//   const [loading, setLoading] = useState(false);
+
+//   const [pagination, setPagination] = useState({
+//     current: 1,
+//     pageSize: 10,
+//     total: 0,
+//   });
+
+//   const [searchText, setSearchText] = useState("");
+//   const [filters, setFilters] = useState({});
+//   const navigate = useNavigate();
+//   const [messageApi, contextHolder] = message.useMessage();
+//   const { showCustomButton } = useTheme();
+
+//   // ======================== FETCH SHIFTS (BACKEND PAGINATION) ==========================
+//   const fetchShift = async (page = 1) => {
+//     try {
+//       setLoading(true);
+
+//       const res = await shiftService.getAllShifts(page, pagination.pageSize);
+
+//       const rows = res?.data?.data || [];
+//       const count = res?.data?.meta?.total || rows.length;
+
+//       setShiftData(rows);
+
+//       setPagination((p) => ({
+//         ...p,
+//         current: page,
+//         total: count,
+//       }));
+//     } catch (err) {
+//       console.error("❌ Shift fetch error:", err);
+//       messageApi.error("Failed to fetch shifts");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchShift(pagination.current);
+//   }, [pagination.current]);
+
+//   // ========================= TABLE PAGINATION CHANGE ==========================
+//   const handleTableChange = (newPagination) => {
+//     setPagination((prev) => ({
+//       ...prev,
+//       current: newPagination.current,
+//       pageSize: newPagination.pageSize,
+//     }));
+//   };
+
+//   // ========================= SEARCH ==========================
+//   const handleSearchChange = (e) => {
+//     const value = e.target.value;
+//     setSearchText(value);
+
+//     setPagination((p) => ({ ...p, current: 1 }));
+
+//     fetchShift(1);
+//   };
+
+//   // ========================= EDIT SHIFT ==========================
+//   const handleEdit = async (record) => {
+//     try {
+//       const id = record.shift_id;
+//       const res = await shiftService.getShiftById(id);
+
+//       navigate("/hrms/pages/createshift", {
+//         state: { isEdit: true, initialValues: res.data.data },
+//       });
+//     } catch {
+//       messageApi.error("Failed to load shift");
+//     }
+//   };
+
+//   // ========================= DELETE SHIFT ==========================
+//   const handleDelete = async (record) => {
+//     try {
+//       const id = record.shift_id;
+//       await shiftService.deleteShift(id);
+
+//       messageApi.success("Shift deleted");
+
+//       const newTotal = Math.max(0, pagination.total - 1);
+//       const maxPage = Math.max(1, Math.ceil(newTotal / pagination.pageSize));
+
+//       const nextPage =
+//         pagination.current > maxPage ? maxPage : pagination.current;
+
+//       setPagination((p) => ({
+//         ...p,
+//         total: newTotal,
+//         current: nextPage,
+//       }));
+
+//       fetchShift(nextPage);
+//     } catch {
+//       messageApi.error("Delete failed");
+//     }
+//   };
+
+//   // ============================= COLUMNS =============================
+//   const columns = [
+//     {
+//       title: "S.No",
+//       render: (_, __, index) =>
+//         (pagination.current - 1) * pagination.pageSize + index + 1,
+//     },
+//     {
+//       title: "Shift Name",
+//       dataIndex: "shift_name",
+//       render: (t) => t?.charAt(0).toUpperCase() + t.slice(1),
+//     },
+//     {
+//       title: "Start Time",
+//       dataIndex: "start_time",
+//       render: (t) => (t ? t.slice(0, 5) : "--"),
+//     },
+//     {
+//       title: "End Time",
+//       dataIndex: "end_time",
+//       render: (t) => (t ? t.slice(0, 5) : "--"),
+//     },
+//     {
+//       title: "Status",
+//       dataIndex: "status",
+//       render: (t) => (
+//         <Tag color={t === "active" ? "green" : "red"}>
+//           {t?.toUpperCase()}
+//         </Tag>
+//       ),
+//     },
+//     {
+//       title: "Actions",
+//       render: (_, rec) => (
+//         <Space>
+//           <Button icon={<EditOutlined />} onClick={() => handleEdit(rec)} />
+
+//           <Popconfirm
+//             title="Delete?"
+//             onConfirm={() => handleDelete(rec)}
+//             okText="Yes"
+//             cancelText="No"
+//           >
+//             <Button danger icon={<DeleteOutlined />} />
+//           </Popconfirm>
+//         </Space>
+//       ),
+//     },
+//   ];
+
+//   return (
+//     <>
+//       {contextHolder}
+
+//       <Input.Search
+//         placeholder="Search..."
+//         allowClear
+//         value={searchText}
+//         onChange={(e) => setSearchText(e.target.value)}
+//         style={{ width: 300, maxWidth: "100%" }}
+//       />
+//       <Popover
+//         content={<FiltersPopover onApply={(values) => setFilters(values)} />}
+//         trigger="click"
+//         placement="bottomLeft"
+//       >
+//         <Button icon={<FilterOutlined />}>Filters</Button>
+//       </Popover>
+//       <Button
+//         type="primary"
+//         icon={<PlusOutlined />}
+//         onClick={() => navigate("/hrms/pages/createshift")}
+//         className="mb-3"
+//       >
+//         Add Shift
+//       </Button>
+
+//       {/* ---------- FINAL WORKING PAGINATED TABLE ---------- */}
+//       <Table
+//         columns={columns}
+//         dataSource={shiftData}
+//         loading={loading}
+//         rowKey="shift_id"
+//         pagination={{
+//           current: pagination.current,
+//           pageSize: pagination.pageSize,
+//           total: pagination.total,
+//           showSizeChanger: false,
+//           showTotal: (t) => `Total ${t} items`,
+//         }}
+//         onChange={handleTableChange}
+//       />
+//       <div className="flex justify-center items-center mt-4 gap-3">
+//         <Button
+//           onClick={() =>
+//             setPagination((p) => ({
+//               ...p,
+//               current: Math.max(1, p.current - 1),
+//             }))
+//           }
+//           disabled={pagination.current === 1}
+//         >
+//           Previous
+//         </Button>
+
+//         <span>
+//           Page {pagination.current} of{" "}
+//           {Math.max(1, Math.ceil(pagination.total / pagination.pageSize))}
+//         </span>
+
+//         <Button
+//           onClick={() =>
+//             setPagination((p) => ({
+//               ...p,
+//               current:
+//                 p.current < Math.ceil(p.total / p.pageSize)
+//                   ? p.current + 1
+//                   : p.current,
+//             }))
+//           }
+//           disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
+//         >
+//           Next
+//         </Button>
+//       </div>
+
+//     </>
+//   );
+// }
+
+
 
 import { useState, useEffect } from "react";
 import {
   Table,
-  Dropdown,
   Input,
-  Popover,
   Button,
-  Select,
   message,
   Tag,
   Space,
-  Switch,  Card,
-   Popconfirm,
+  Popconfirm,
+  Popover,
+  Form,
+  Select,
 } from "antd";
+
 import {
-  EyeOutlined,
   EditOutlined,
   DeleteOutlined,
-  FilterOutlined,
-  EllipsisOutlined,
   PlusOutlined,
-  SettingOutlined,
-  TableOutlined,
-  AppstoreOutlined,
+  FilterOutlined,
 } from "@ant-design/icons";
+
 import { useTheme } from "../../../context/ThemeContext";
-import { useNavigate, useLocation } from "react-router-dom";
-import { shiftService } from "./ShiftApi.js";
+import { useNavigate } from "react-router-dom";
+import { shiftService } from "./ShiftApi";
 
-const { Option } = Select;
+/**
+ * Simple FiltersPopover component
+ * - onApply(filters) will be called when user clicks Apply
+ * - initialFilters can be passed (optional)
+ */
+function FiltersPopover({ initialFilters = {}, onApply, onClose }) {
+  const [form] = Form.useForm();
 
+  useEffect(() => {
+    form.setFieldsValue(initialFilters);
+  }, [initialFilters, form]);
 
-
-// =====================================================================
-// ========================= FILTER SECTION START =======================
-// =====================================================================
-
-const getUniqueValues = (data, key) => {
-  if (key === "status") {
-    return [...new Set(data.map((item) => item[key]))].filter(Boolean);
-  }
-  return [];
-};
-
-const FiltersPopover = ({ onApply, dataSource, currentFilters }) => {
-  const [filters, setFilters] = useState({
-    status: currentFilters.status,
-  });
-
-  const statuses = getUniqueValues(dataSource, "status");
-
-  const onChange = (field, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+  const handleApply = () => {
+    const values = form.getFieldsValue();
+    onApply?.(values);
+    onClose?.();
   };
 
-  const renderPopoverContent = (field) => {
-    let options = [];
-    if (field === "status") {
-      options = statuses;
-    }
-
-    return (
-      <div>
-        <div style={{ marginBottom: 3, fontWeight: "bold", color: "#555" }}>
-          {field.charAt(0).toUpperCase() + field.slice(1)}
-        </div>
-        <Select
-          value={filters[field]}
-          onChange={(val) => onChange(field, val)}
-          placeholder={`Select ${
-            field.charAt(0).toUpperCase() + field.slice(1)
-          }`}
-          style={{ width: 180 }}
-          allowClear
-        >
-          {options.map((opt) => (
-            <Option key={opt} value={opt}>
-              {opt.charAt(0).toUpperCase() + opt.slice(1).toLowerCase()}
-            </Option>
-          ))}
-        </Select>
-      </div>
-    );
+  const handleClear = () => {
+    form.resetFields();
+    onApply?.({});
+    onClose?.();
   };
-// =====================================================================
-// ========================== FILTER SECTION END ========================
-// =====================================================================
 
   return (
-    <div style={{ padding: 10, width: 200, height: "auto" }}>
-      {["status"].map((field) => (
-        <div key={field} style={{ marginBottom: 15 }}>
-          <Popover
-            content={renderPopoverContent(field)}
-            trigger="hover"
-            placement="right"
-            mouseEnterDelay={0.1}
-            mouseLeaveDelay={0.1}
-          >
-            <div
-              style={{
-                cursor: "pointer",
-                fontWeight: "bold",
-                width: 100,
-                color: filters[field] ? "#1890ff" : "inherit",
-              }}
-            >
-              {field.charAt(0).toUpperCase() + field.slice(1)}
-              {filters[field] && (
-                <span className="ml-2 text-xs text-gray-500">(1)</span>
-              )}
-            </div>
-          </Popover>
+    <div style={{ minWidth: 260, padding: 12 }}>
+      <Form form={form} layout="vertical">
+        <Form.Item name="status" label="Status">
+          <Select allowClear placeholder="Select status">
+            <Select.Option value="active">Active</Select.Option>
+            <Select.Option value="inactive">Inactive</Select.Option>
+          </Select>
+        </Form.Item>
+
+        <Form.Item name="shift_name" label="Shift name contains">
+          <Input placeholder="e.g. morning" />
+        </Form.Item>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+          <Button onClick={handleClear}>Clear</Button>
+          <Button type="primary" onClick={handleApply}>
+            Apply
+          </Button>
         </div>
-      ))}
-      <div style={{ textAlign: "center", marginTop: 20 }} className="space-x-2">
-        <Button
-          danger
-          size="small"
-          onClick={() => {
-            setFilters({});
-            onApply({});
-          }}
-          disabled={Object.values(filters).every((val) => !val)}
-        >
-          Reset
-        </Button>
-        <Button
-          type="primary"
-          size="small"
-          onClick={() => onApply(filters)}
-          disabled={Object.values(filters).every((val) => !val)}
-        >
-          Apply
-        </Button>
-      </div>
+      </Form>
     </div>
   );
-};
+}
 
+export default function Shift() {
+  const [shiftData, setShiftData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-
-// =====================================================================
-// ======================== SHIFT GET ALL START =========================
-// =====================================================================
-
-const Shift = () => {
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0,
   });
+
   const [searchText, setSearchText] = useState("");
-  const [filters, setFilters] = useState({
-    status: undefined,
-  });
-  const [shiftData, setShiftData] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const { showCustomButton } = useTheme();
+  const [filters, setFilters] = useState({});
+
   const navigate = useNavigate();
   const [messageApi, contextHolder] = message.useMessage();
-  const location = useLocation();
-  const localStorageKey = "shiftVisibleColumns";
+  const { showCustomButton } = useTheme();
 
-  // View Mode (Table / Card)
-  const [viewMode, setViewMode] = useState(
-    localStorage.getItem("shiftViewMode") || "table"
-  );
-  useEffect(() => {
-    localStorage.setItem("shiftViewMode", viewMode);
-  }, [viewMode]);
-
-  // Visible Columns
-  // const [visibleColumns, setVisibleColumns] = useState(() => {
-  //   const stored = localStorage.getItem(localStorageKey);
-  //   return stored
-  //     ? JSON.parse(stored)
-  //     : [
-  //         "serialNumber",
-  //         "shift_name",
-  //         "start_time",
-  //         "end_time",
-  //         "status",
-  //         "action",
-  //       ];
-  // });
-
-  const [visibleColumns, setVisibleColumns] = useState([
-  "serialNumber",
-  "shift_name",
-  "start_time",
-  "end_time",
-  "break_start_time",
-  "break_end_time",
-  "total_hours",
-  "status",
-  "action",
-]);
-
-
-  useEffect(() => {
-    localStorage.setItem(localStorageKey, JSON.stringify(visibleColumns));
-  }, [visibleColumns]);
-
-
-  // ======================== FETCH SHIFTS API (GET ALL) =======================
-  const fetchShift = async (
-    paginationParams = pagination,
-    search = searchText,
-    appliedFilters = filters
-  ) => {
-    setLoading(true);
-
+  // fetch shifts
+  const fetchShift = async (page = 1) => {
     try {
-      // GET ALL SHIFTS - API CALL
-      const response = await shiftService.getAllShifts();
+      setLoading(true);
+      // pass search + filters to API as needed; here we send page and pageSize
+      // const res = await shiftService.getAllShifts(page, pagination.pageSize, {
+      //   search: searchText,
+      //   ...filters,
+      // });
+const res = await shiftService.getAllShifts(page, pagination.pageSize, {
+  search: searchText || "",
+  status: filters.status || "",
+  shift_name: filters.shift_name || "",
+});
 
-      let data = response.data.data || [];
+      const rows = res?.data?.data || [];
+      const count = res?.data?.meta?.total ?? rows.length;
 
-      // Search filter
-      if (search) {
-        data = data.filter((item) =>
-          item.shift_name?.toLowerCase().includes(search.toLowerCase())
-        );
-      }
+      setShiftData(rows);
 
-      // Status filter
-      if (appliedFilters.status) {
-        data = data.filter((item) => item.status === appliedFilters.status);
-      }
-
-      // Pagination (Frontend)
-      const start = (paginationParams.current - 1) * paginationParams.pageSize;
-      const end = start + paginationParams.pageSize;
-      const paginatedData = data.slice(start, end);
-
-      setShiftData(paginatedData);
-
-      setPagination({
-        current: paginationParams.current,
-        pageSize: paginationParams.pageSize,
-        total: data.length,
-      });
-
-    } catch (error) {
-      console.error("Error fetching shift data:", error);
+      setPagination((p) => ({
+        ...p,
+        current: page,
+        total: count,
+      }));
+    } catch (err) {
+      console.error("❌ Shift fetch error:", err);
       messageApi.error("Failed to fetch shifts");
     } finally {
       setLoading(false);
     }
   };
-  // ========================= GET ALL SHIFTS END ==============================
 
+ useEffect(() => {
+  fetchShift(pagination.current);
+}, [pagination.current, pagination.pageSize, filters, searchText]);
 
-  // INITIAL LOAD
-  useEffect(() => {
-    fetchShift();
-  }, []);
+  // handle table pagination (AntD)
+  const handleTableChange = (newPagination) => {
+    setPagination((prev) => ({
+      ...prev,
+      current: newPagination.current,
+      pageSize: newPagination.pageSize,
+    }));
+  };
 
-
-  // FORM SUCCESS MESSAGE AFTER ADD/EDIT
-  useEffect(() => {
-    if (location.state?.message) {
-      messageApi.success(location.state.message);
-      const { message, ...rest } = location.state;
-      window.history.replaceState({ ...rest }, document.title);
-    }
-  }, [location.state, messageApi]);
-
-
-  // SEARCH FUNCTION
+  // search (debounce would be nice but keeping simple)
   const handleSearchChange = (e) => {
     const value = e.target.value;
-    setSearchText(value);
-    setPagination((prev) => ({ ...prev, current: 1 }));
-    fetchShift({ ...pagination, current: 1 }, value, filters);
+   setSearchText(value);
+setPagination((p) => ({ ...p, current: 1 }));
   };
 
-  // APPLY FILTERS
-  const handleFilterApply = (newFilters) => {
-    setFilters(newFilters);
-    setPagination((prev) => ({ ...prev, current: 1 }));
-    fetchShift({ ...pagination, current: 1 }, searchText, newFilters);
+  const handleEdit = async (record) => {
+    try {
+      const id = record.shift_id;
+      const res = await shiftService.getShiftById(id);
+
+      navigate("/hrms/pages/createshift", {
+        state: { isEdit: true, initialValues: res.data.data },
+      });
+    } catch {
+      messageApi.error("Failed to load shift");
+    }
   };
 
-  // PAGINATION CHANGE
-  const handleTableChange = (newPagination) => {
-    setPagination(newPagination);
-    fetchShift(newPagination, searchText, filters);
+  const handleDelete = async (record) => {
+    try {
+      const id = record.shift_id;
+      await shiftService.deleteShift(id);
+
+      messageApi.success("Shift deleted");
+
+      const newTotal = Math.max(0, pagination.total - 1);
+      const maxPage = Math.max(1, Math.ceil(newTotal / pagination.pageSize));
+
+      const nextPage =
+        pagination.current > maxPage ? maxPage : pagination.current;
+
+      setPagination((p) => ({
+        ...p,
+        total: newTotal,
+        current: nextPage,
+      }));
+
+      fetchShift(nextPage);
+    } catch {
+      messageApi.error("Delete failed");
+    }
   };
 
-  // ========================= EDIT SHIFT END ==================================
-
-const handleEdit = async (record) => {
-  try {
-    const id = record.shift_id;
-
-    if (!id) {
-      messageApi.error("Invalid shift ID");
-      return;
-    }
-
-    const response = await shiftService.getShiftById(id);
-    const shiftData = response?.data?.data;
-
-    if (!shiftData) {
-      messageApi.error("Failed to load shift details");
-      return;
-    }
-
-    messageApi.success("Shift loaded successfully");
-
-    navigate("/hrms/pages/createshift", {
-      state: {
-        isEdit: true,
-        initialValues: shiftData,
-      },
-    });
-
-  } catch (error) {
-    messageApi.error(
-      error?.response?.data?.message || "Failed to load shift details"
-    );
-  }
-};
-
-
-// ========================= DELETE SHIFT START ================================
-const handleDelete = async (record) => {
-  try {
-    const id = record.shift_id;
-
-    if (!id) {
-      messageApi.error("Invalid shift ID");
-      return;
-    }
-
-    await shiftService.deleteShift(id);
-    messageApi.success("Shift deleted successfully");
-    fetchShift();
-  } catch (error) {
-    const errMsg =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to delete shift";
-
-    messageApi.error(errMsg);
-  }
-};
-
-
-
-  const allColumns = [
-  {
-    title: "S.No",
-    key: "serialNumber",
-    width: 70,
-    render: (_, _record, index) =>
-      (pagination.current - 1) * pagination.pageSize + index + 1,
-  },
-  {
-    title: "Shift Name",
-    key: "shift_name",
-    dataIndex: "shift_name",
-    render: (text) => text.charAt(0).toUpperCase() + text.slice(1),
-  },
-  {
-    title: "Start Time",
-    key: "start_time",
-    dataIndex: "start_time",
-    render: (text) => (text ? text.slice(0, 5) : "--:--"),
-  },
-  {
-    title: "End Time",
-    key: "end_time",
-    dataIndex: "end_time",
-    render: (text) => (text ? text.slice(0, 5) : "--:--"),
-  },
-  {
-    title: "Break Start",
-    key: "break_start_time",
-    dataIndex: "break_start_time",
-    render: (text) => (text ? text.slice(0, 5) : "--:--"),
-  },
-  {
-    title: "Break End",
-    key: "break_end_time",
-    dataIndex: "break_end_time",
-    render: (text) => (text ? text.slice(0, 5) : "--:--"),
-  },
-  {
-    title: "Total Hours",
-    key: "total_hours",
-    dataIndex: "total_hours",
-  },
-  {
-    title: "Status",
-    key: "status",
-    dataIndex: "status",
-    render: (text) => (
-      <Tag color={text === "active" ? "green" : "red"}>
-        {text.charAt(0).toUpperCase() + text.slice(1)}
-      </Tag>
-    ),
-  },
+  const columns = [
+    {
+      title: "S.No",
+      render: (_, __, index) =>
+        (pagination.current - 1) * pagination.pageSize + index + 1,
+    },
+    {
+      title: "Shift Name",
+      dataIndex: "shift_name",
+      render: (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : "--"),
+    },
+    {
+      title: "Start Time",
+      dataIndex: "start_time",
+      render: (t) => (t ? t.slice(0, 5) : "--"),
+    },
+    {
+      title: "End Time",
+      dataIndex: "end_time",
+      render: (t) => (t ? t.slice(0, 5) : "--"),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      render: (t) => (
+        <Tag color={t === "active" ? "green" : "red"}>{t?.toUpperCase()}</Tag>
+      ),
+    },
     {
       title: "Actions",
-      key: "action",
-      render: (_, record) => (
+      render: (_, rec) => (
         <Space>
-          <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+          <Button icon={<EditOutlined />} onClick={() => handleEdit(rec)} />
+
           <Popconfirm
             title="Delete?"
-           onConfirm={() => handleDelete(record)}
-
+            onConfirm={() => handleDelete(rec)}
             okText="Yes"
             cancelText="No"
           >
@@ -429,226 +483,111 @@ const handleDelete = async (record) => {
         </Space>
       ),
     },
-  // {
-  //   title: "Action",
-  //   key: "action",
-  //   render: (_, rec) => (
-  //     <Dropdown
-  //       menu={{
-
-  //         items: [
-  //           // { key: "view", icon: <EyeOutlined />, label: "View", onClick: () => handleMenuClick(rec, { key: "view" }) },
-  //           { key: "edit", icon: <EditOutlined />, label: "Edit", onClick: () => handleMenuClick(rec, { key: "edit" }) },
-  //           { key: "delete", icon: <DeleteOutlined />, label: "Delete", onClick: () => handleMenuClick(rec, { key: "delete" }) },
-  //         ],
-  //       }}
-  //       trigger={["click"]}
-  //     >
-  //       <EllipsisOutlined className="cursor-pointer text-lg rotate-90" />
-  //     </Dropdown>
-  //   ),
-  // },
-];
-
-  // ====================== ALL TABLE COLUMNS END ============================
-
-  // Filter visible columns
-  const columns = allColumns.filter((col) =>
-    visibleColumns.includes(col.dataIndex || col.key)
-  );
-
-  // ======================= TABLE SECTION START ==========================
+  ];
 
   return (
     <>
       {contextHolder}
-      <div className="max-w-full overflow-hidden">
-        <div className="bg-white">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
-            <h2 className="font-semibold text-xl">Shift</h2>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-              <div className="w-full sm:w-[250px] min-w-[200px]">
-                <Input.Search
-                  placeholder="Search by name"
-                  value={searchText}
-                  onChange={handleSearchChange}
-                  className="w-full"
-                  allowClear
-                />
-              </div>
 
-              <div className="flex gap-2 w-full sm:w-auto justify-stretch sm:justify-end">
-                <Popover
-                  content={
-                    <FiltersPopover
-                      dataSource={shiftData}
-                      currentFilters={filters}
-                      onApply={handleFilterApply}
-                    />
-                  }
-                  trigger="click"
-                  placement="bottomLeft"
-                >
-                  <Button
-                    icon={<FilterOutlined />}
-                    className="w-full sm:w-auto"
-                  >
-                    Filters
-                  </Button>
-                </Popover>
-
-                {/* ======================= ADD SHIFT BUTTON (CREATE) ======================= */}
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={() => navigate("/hrms/pages/createshift")}
-                >
-                  Add Shift
-                </Button>
-                {/* ======================= ADD SHIFT END ================================ */}
-
-                {/* COLUMN SETTINGS */}
-                {showCustomButton && (
-                  <Dropdown
-                    menu={{
-                      items: allColumns.map((col) => ({
-                        key: col.dataIndex || col.key,
-                        label: (
-                          <Space>
-                            <Switch
-                              checked={visibleColumns.includes(
-                                col.dataIndex || col.key
-                              )}
-                              onChange={(checked) => {
-                                if (checked) {
-                                  setVisibleColumns([
-                                    ...visibleColumns,
-                                    col.dataIndex || col.key,
-                                  ]);
-                                } else {
-                                  setVisibleColumns(
-                                    visibleColumns.filter(
-                                      (k) => k !== (col.dataIndex || col.key)
-                                    )
-                                  );
-                                }
-                              }}
-                            />
-                            {col.title}
-                          </Space>
-                        ),
-                      })),
-                    }}
-                  >
-                    <Button icon={<SettingOutlined />}></Button>
-                  </Dropdown>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ========================= TABLE VIEW START ============================ */}
-        {viewMode === "table" ? (
-          <div className="overflow-x-auto">
-            <Table
-              columns={columns}
-              dataSource={shiftData}
-              size="small"
-              pagination={{
-                ...pagination,
-                responsive: true,
-                showSizeChanger: true,
-                showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} of ${total} items`,
-              }}
-              onChange={handleTableChange}
-              rowKey="shift_id"
-              scroll={{ x: "max-content" }}
-              className="w-full"
-              loading={loading}
-              components={{
-                header: {
-                  cell: (props) => (
-                    <th
-                      {...props}
-                      style={{
-                        position: "sticky",
-                        top: 0,
-                        zIndex: 2,
-                        padding: "8px 8px",
-                        whiteSpace: "nowrap",
-                      }}
-                    />
-                  ),
-                },
-              }}
-            />
-          </div>
-        ) : (
-          <>
-            {/* ========================= CARD VIEW START ============================ */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-              {shiftData.length ? (
-                shiftData.map((rec, idx) => (
-                  <Card
-                    key={rec.id}
-                    title={`${
-                      (pagination.current - 1) * pagination.pageSize + idx + 1
-                    }. ${rec.shift_name}`}
-                  >
-                    <p>
-                      <strong>Start Time:</strong>{" "}
-                      {rec.start_time ? rec.start_time.slice(0, 5) : "--:--"}
-                    </p>
-                    <p>
-                      <strong>End Time:</strong>{" "}
-                      {rec.end_time ? rec.end_time.slice(0, 5) : "--:--"}
-                    </p>
-                    <p>
-                      <strong>Status:</strong>{" "}
-                      <Tag color={rec.status === "active" ? "green" : "red"}>
-                        {rec.status}
-                      </Tag>
-                    </p>
-
-                   <Dropdown
-  menu={{
-    items: [
-      {
-        key: "edit",
-        icon: <EditOutlined />,
-        label: "Edit",
-        onClick: () => handleEdit(rec),
-      },
-      {
-        key: "delete",
-        icon: <DeleteOutlined />,
-        label: "Delete",
-        onClick: () => handleDelete(rec),
-      },
-    ],
+      <div
+  style={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+    flexWrap: "wrap",
+    gap: 12,
   }}
-  trigger={["click"]}
 >
-  <EllipsisOutlined className="cursor-pointer text-lg rotate-90" />
-</Dropdown>
+  {/* LEFT SIDE - SHIFT TITLE */}
+  <h2 className="font-semibold text-xl">Shift</h2>
 
-                  </Card>
-                ))
-              ) : (
-                <div className="py-10 text-center col-span-full">
-                  No shifts found
-                </div>
-              )}
-            </div>
-            {/* ========================= CARD VIEW END ============================== */}
-          </>
-        )}
-        {/* ========================= TABLE VIEW END ============================ */}
+  {/* RIGHT SIDE - SEARCH, FILTER, ADD BUTTON */}
+  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+    <Input.Search
+      placeholder="Search..."
+      allowClear
+      value={searchText}
+      onChange={handleSearchChange}
+      style={{ width: 300, maxWidth: "100%" }}
+    />
+
+    <Popover
+      content={
+        <FiltersPopover
+          initialFilters={filters}
+          onApply={(values) => {
+            setFilters(values || {});
+            setPagination((p) => ({ ...p, current: 1 }));
+          }}
+          onClose={() => {}}
+        />
+      }
+      trigger="click"
+      placement="bottomLeft"
+    >
+      <Button icon={<FilterOutlined />}>Filters</Button>
+    </Popover>
+
+    <Button
+      type="primary"
+      icon={<PlusOutlined />}
+      onClick={() => navigate("/hrms/pages/createshift")}
+    >
+      Add Shift
+    </Button>
+  </div>
+</div>
+
+
+      <Table
+        columns={columns}
+        dataSource={shiftData}
+        loading={loading}
+        rowKey="shift_id"
+        pagination={{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
+          showSizeChanger: false,
+          showTotal: (t) => `Total ${t} items`,
+        }}
+        onChange={handleTableChange}
+      />
+
+      <div className="flex justify-center items-center mt-4 gap-3">
+        <Button
+          onClick={() =>
+            setPagination((p) => ({
+              ...p,
+              current: Math.max(1, p.current - 1),
+            }))
+          }
+          disabled={pagination.current === 1}
+        >
+          Previous
+        </Button>
+
+        <span>
+          Page {pagination.current} of{" "}
+          {Math.max(1, Math.ceil(pagination.total / pagination.pageSize))}
+        </span>
+
+        <Button
+          onClick={() =>
+            setPagination((p) => ({
+              ...p,
+              current:
+                p.current < Math.ceil(p.total / p.pageSize) ? p.current + 1 : p.current,
+            }))
+          }
+          disabled={
+            pagination.current >= Math.ceil(pagination.total / pagination.pageSize)
+          }
+        >
+          Next
+        </Button>
       </div>
     </>
   );
-};
-
-export default Shift;
+}

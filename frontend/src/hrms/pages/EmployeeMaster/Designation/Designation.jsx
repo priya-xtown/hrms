@@ -32,6 +32,9 @@ export default function Designations() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentDesignation, setCurrentDesignation] = useState(null);
   const [statusFilter, setStatusFilter] = useState("All");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [total, setTotal] = useState(0);
   const [departments, setDepartments] = useState([]);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
 
@@ -41,22 +44,30 @@ export default function Designations() {
   const [deptMap, setDeptMap] = useState({});
 
   // Fetch Departments and create map
-  const fetchDepartments = async () => {
+  const fetchDepartments = async (page = 1) => {
     try {
       setLoadingDepartments(true);
-      const res = await DepartmentApi.getAll();
+      const res = await DepartmentApi.getAll(page, pageSize);
       const deptList =
         res?.data?.rows ||
         res?.data?.departments ||
         res?.data?.data ||
         res?.data ||
         [];
+ const count =
+  res?.data?.count ||
+  res?.data?.total ||
+  res?.data?.rows?.length ||
+  deptList.length ||
+  0;
+
+setTotal(count);
 
       const formatted = Array.isArray(deptList)
         ? deptList.map((d) => ({
-            id: d.id || d._id || d.department_id,
-            department_name: d.department_name || d.name || "—",
-          }))
+          id: d.id || d._id || d.department_id,
+          department_name: d.department_name || d.name || "—",
+        }))
         : [];
 
       setDepartments(formatted);
@@ -74,46 +85,55 @@ export default function Designations() {
   };
 
   // Fetch Designations
-  const fetchDesignations = async () => {
-    try {
-      setLoading(true);
-      const res = await RoleApi.getAll();
-      const rawData =
-        res?.data?.rows ||
-        res?.data?.roles ||
-        res?.data?.data ||
-        res?.data ||
-        [];
+ const fetchDesignations = async () => {
+  try {
+    setLoading(true);
+    const res = await RoleApi.getAll(currentPage, pageSize);  // ✅ FIXED
 
-      const formatted = Array.isArray(rawData)
-        ? rawData.map((item) => ({
-            id: item.id || item.role_id || item._id,
-            designation_name: item.role_name || "",
-            department:
-              item.department_name || deptMap[item.department_id] || "—",
-            department_id: item.department_id,
-            status: item.is_active ? "Active" : "Inactive",
-          }))
-        : [];
+    const rawData =
+      res?.data?.rows ||
+      res?.data?.roles ||
+      res?.data?.data ||
+      res?.data ||
+      [];
 
-      setDesignations(formatted);
-    } catch (err) {
-      console.error("❌ Error fetching designations:", err);
-      message.error(err.response?.data?.message || "Failed to fetch designations");
-    } finally {
-      setLoading(false);
-    }
-  };
+    const totalCount =
+      res?.data?.count ||
+      res?.data?.total ||
+      rawData.length;
+
+    setTotal(totalCount);
+
+    const formatted = Array.isArray(rawData)
+      ? rawData.map((item) => ({
+          id: item.id || item.role_id || item._id,
+          designation_name: item.role_name || "",
+          department: item.department_name || deptMap[item.department_id] || "—",
+          department_id: item.department_id,
+          status: item.is_active ? "Active" : "Inactive",
+        }))
+      : [];
+
+    setDesignations(formatted);
+  } catch (err) {
+    console.error("❌ Error fetching designations:", err);
+    message.error(err.response?.data?.message || "Failed to fetch designations");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
-    fetchDepartments();
-  }, []);
+    fetchDepartments(currentPage);
+  }, [currentPage]);
 
-  useEffect(() => {
-    if (Object.keys(deptMap).length > 0) {
-      fetchDesignations();
-    }
-  }, [deptMap]);
+ useEffect(() => {
+  if (Object.keys(deptMap).length > 0) {
+    fetchDesignations();
+  }
+}, [deptMap, currentPage]);
+
 
   const fetchDesignationById = async (id) => {
     try {
@@ -255,17 +275,17 @@ export default function Designations() {
               const designation = await fetchDesignationById(
                 record.id || record._id || record.role_id
               );
-             if (designation) {
-  setCurrentDesignation(designation);
-  setIsEditModalOpen(true); // first open the modal
-  setTimeout(() => {
-    editForm.setFieldsValue({
-      role_name: designation.role_name,
-      department: designation.department_id || designation.department,
-      status: designation.status,
-    });
-  }, 0); // ensures form is mounted
-}
+              if (designation) {
+                setCurrentDesignation(designation);
+                setIsEditModalOpen(true); // first open the modal
+                setTimeout(() => {
+                  editForm.setFieldsValue({
+                    role_name: designation.role_name,
+                    department: designation.department_id || designation.department,
+                    status: designation.status,
+                  });
+                }, 0); // ensures form is mounted
+              }
 
             }}
           />
@@ -299,20 +319,6 @@ export default function Designations() {
       <div className="flex flex-wrap justify-between items-center mb-4">
         <h2 className="font-semibold text-xl">Designation List</h2>
         <div className="flex flex-wrap gap-2 items-center">
-          <Dropdown
-            menu={{
-              items: [
-                { label: "Last 7 Days", key: "7" },
-                { label: "Last 30 Days", key: "30" },
-                { label: "All Time", key: "all" },
-              ],
-            }}
-            trigger={["click"]}
-          >
-            <Button>
-              Sort By: Last 7 Days <DownOutlined />
-            </Button>
-          </Dropdown>
           <Search placeholder="Search" style={{ width: 200 }} />
         </div>
       </div>
@@ -321,10 +327,40 @@ export default function Designations() {
         <Table
           columns={columns}
           dataSource={filteredData}
-          pagination={{ pageSize: 10 }}
+          pagination={{
+            current: currentPage,
+            pageSize: pageSize,
+            total: total,
+            showSizeChanger: false,
+            onChange: (page) => {
+              setCurrentPage(page);  // 🚀 triggers fetch via useEffect
+            },
+          }}
           rowKey={(record) => record.id || record._id || record.role_id}
-          loading={loading}
         />
+        <div className="flex justify-center items-center mt-4 gap-3">
+          <Button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </Button>
+        
+          <span>
+            Page {currentPage} of {Math.max(1, Math.ceil(total / pageSize))}
+          </span>
+        
+          <Button
+            onClick={() =>
+              setCurrentPage((prev) =>
+                prev < Math.ceil(total / pageSize) ? prev + 1 : prev
+              )
+            }
+            disabled={currentPage >= Math.ceil(total / pageSize)}
+          >
+            Next
+          </Button>
+        </div>
       </div>
 
       {/* Add Modal */}
@@ -361,19 +397,19 @@ export default function Designations() {
                 ))}
               </Select>
             </Form.Item>
-<Form.Item
-  name="status"
-  label="Status"
-  rules={[{ required: true, message: "Please select status" }]}
->
-  <Select
-    style={{ width: 220 }}
-    options={[
-      { value: "Active", label: "Active" },
-      { value: "Inactive", label: "Inactive" },
-    ]}
-  />
-</Form.Item>
+            <Form.Item
+              name="status"
+              label="Status"
+              rules={[{ required: true, message: "Please select status" }]}
+            >
+              <Select
+                style={{ width: 220 }}
+                options={[
+                  { value: "Active", label: "Active" },
+                  { value: "Inactive", label: "Inactive" },
+                ]}
+              />
+            </Form.Item>
 
           </div>
 

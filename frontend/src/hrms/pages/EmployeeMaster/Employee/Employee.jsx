@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -112,10 +111,54 @@ const Employee = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
+  // const fetchEmployees = async (page = 1) => {
+  //   try {
+  //     setLoading(true);
+  //     const res = await EmployeeApi.getAll(page, pageSize);
+  //     let rows = [];
+  //     let count = 0;
+
+  //     if (res?.data) {
+  //       if (Array.isArray(res.data)) {
+  //         rows = res.data;
+  //         count = res.data.length;
+  //       } else if (Array.isArray(res.data.rows)) {
+  //         rows = res.data.rows;
+  //         count = typeof res.data.count === "number" ? res.data.count : res.data.rows.length;
+  //       } else {
+  //         rows = Array.isArray(res.data) ? res.data : [];
+  //         count = rows.length;
+  //       }
+  //     }
+  //     const updatedRows = rows.map((emp) => {
+  //       const raw = emp.profile_picture || emp.profileImage || emp.image || emp.photo || null;
+  //       const final = resolveProfileUrl(raw, origin);
+  //       return {
+  //         ...emp,
+  //         // keep raw for debugging but rely on profile_picture_url in UI
+  //         profile_picture: raw,
+  //         profile_picture_url: final,
+  //       };
+  //     });
+
+  //     setEmployees(updatedRows);
+  //     setTotal(count);
+  //     // setCurrentPage(page);
+  //   } catch (err) {
+  //     console.error("❌ Error fetching employees:", err);
+  //     message.error(err?.response?.data?.message || "Failed to fetch employees");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
   const fetchEmployees = async (page = 1) => {
     try {
       setLoading(true);
+
       const res = await EmployeeApi.getAll(page, pageSize);
+
       let rows = [];
       let count = 0;
 
@@ -125,18 +168,15 @@ const Employee = () => {
           count = res.data.length;
         } else if (Array.isArray(res.data.rows)) {
           rows = res.data.rows;
-          count = typeof res.data.count === "number" ? res.data.count : res.data.rows.length;
-        } else {
-          rows = Array.isArray(res.data) ? res.data : [];
-          count = rows.length;
+          count = res.data.count;
         }
       }
+
       const updatedRows = rows.map((emp) => {
         const raw = emp.profile_picture || emp.profileImage || emp.image || emp.photo || null;
         const final = resolveProfileUrl(raw, origin);
         return {
           ...emp,
-          // keep raw for debugging but rely on profile_picture_url in UI
           profile_picture: raw,
           profile_picture_url: final,
         };
@@ -144,7 +184,7 @@ const Employee = () => {
 
       setEmployees(updatedRows);
       setTotal(count);
-      setCurrentPage(page);
+
     } catch (err) {
       console.error("❌ Error fetching employees:", err);
       message.error(err?.response?.data?.message || "Failed to fetch employees");
@@ -300,7 +340,7 @@ const Employee = () => {
 
     // Build preview image url (record may already have profile_picture_url)
     const preview = resolveProfileUrl(record.profile_picture || record.profile_picture_url || null, origin);
-setProfileImage(preview);
+    setProfileImage(preview);
 
     setEditingEmployee(record);
     setEditModalVisible(true);
@@ -343,42 +383,42 @@ setProfileImage(preview);
     //   })();
     // }
     if (preview) {
-  (async () => {
-    try {
-      // Try fetching sanitized preview
-      const resp = await fetch(preview, { cache: "no-store" });
-      if (resp.ok) {
-        const blob = await resp.blob();
-        const name = (new URL(preview, origin)).pathname.split("/").pop() || "profile.jpg";
-        const fileObj = new File([blob], name, { type: blob.type || "image/jpeg" });
-        setEditFile(fileObj);
-        editForm.setFieldsValue({ profile_picture: fileObj });
-      } else {
-        // fallback: if preview failed and original record.profile_picture is a string,
-        // attempt to extract filename and build a "simple" URL
-        const raw = record.profile_picture || "";
-        const maybeName = raw.split("/").pop();
-        if (maybeName) {
-          const alt = `${origin}/uploads/employees/${maybeName}`;
-          try {
-            const r2 = await fetch(alt, { cache: "no-store" });
-            if (r2.ok) {
-              const blob2 = await r2.blob();
-              const fileObj2 = new File([blob2], maybeName, { type: blob2.type || "image/jpeg" });
-              setEditFile(fileObj2);
-              editForm.setFieldsValue({ profile_picture: fileObj2 });
-              setProfileImage(alt);
+      (async () => {
+        try {
+          // Try fetching sanitized preview
+          const resp = await fetch(preview, { cache: "no-store" });
+          if (resp.ok) {
+            const blob = await resp.blob();
+            const name = (new URL(preview, origin)).pathname.split("/").pop() || "profile.jpg";
+            const fileObj = new File([blob], name, { type: blob.type || "image/jpeg" });
+            setEditFile(fileObj);
+            editForm.setFieldsValue({ profile_picture: fileObj });
+          } else {
+            // fallback: if preview failed and original record.profile_picture is a string,
+            // attempt to extract filename and build a "simple" URL
+            const raw = record.profile_picture || "";
+            const maybeName = raw.split("/").pop();
+            if (maybeName) {
+              const alt = `${origin}/uploads/employees/${maybeName}`;
+              try {
+                const r2 = await fetch(alt, { cache: "no-store" });
+                if (r2.ok) {
+                  const blob2 = await r2.blob();
+                  const fileObj2 = new File([blob2], maybeName, { type: blob2.type || "image/jpeg" });
+                  setEditFile(fileObj2);
+                  editForm.setFieldsValue({ profile_picture: fileObj2 });
+                  setProfileImage(alt);
+                }
+              } catch (err) {
+                // ignore — user can reupload
+              }
             }
-          } catch (err) {
-            // ignore — user can reupload
           }
+        } catch (e) {
+          // ignore fetch errors
         }
-      }
-    } catch (e) {
-      // ignore fetch errors
+      })();
     }
-  })();
-}
   };
 
   const handleEdit = async (values) => {
@@ -470,7 +510,13 @@ setProfileImage(preview);
   ];
 
   const columns = [
-    { title: "S.No", render: (_, __, i) => i + 1 },
+    // { title: "S.No", render: (_, __, i) => i + 1 },
+
+    {
+      title: "S.No",
+      render: (_, __, index) =>
+        (currentPage - 1) * pageSize + index + 1,
+    },
 
     {
       title: "Profile",
@@ -572,7 +618,6 @@ setProfileImage(preview);
             pageSize: pageSize,
             total: total,
             onChange: (page) => setCurrentPage(page),
-            showSizeChanger: false,
           }}
         />
 

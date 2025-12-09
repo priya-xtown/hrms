@@ -236,14 +236,14 @@ const App = () => {
       : "/404";
   };
 
-  return (
+  return(
     <AntApp>
       <AuthProvider>
         <BrowserRouter>
           <Loading duration={3000} />
           <Suspense fallback={<div className="p-4"><Loading /></div>}>
             <Routes>
-              {/* Public */}
+              {/* Public */},
               <Route path="/" element={<Login />} />
               <Route path="/register" element={<Register />} />
 

@@ -17,10 +17,12 @@ const EmployeeApi = {
   getById: (id) => api.get(`/employee/getEmployeeById/${id}`),
 
   // 🔹 Get REGISTERED employees
-  getRegisteredEmployees: () => api.get(`employee/getRegisteredEmployees`),
+  getRegisteredEmployees: (page = 1, limit = 10) => 
+    api.get(`employee/getRegisteredEmployees`, { params: { page, limit } }),
 
   // 🔹 Get UNREGISTERED employees
-  getUnregisteredEmployees: () => api.get(`employee/getUnregisteredEmployees`),
+  getUnregisteredEmployees: (page = 1, limit = 10) =>
+     api.get(`employee/getUnregisteredEmployees`, { params: { page, limit } }),
 
   // 🔹 Update employee
   update: (id, data) => api.put(`/employee/updateEmployee/${id}`, data),

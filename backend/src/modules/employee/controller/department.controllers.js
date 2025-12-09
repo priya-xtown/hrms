@@ -56,8 +56,10 @@ export const getAllDepartments = async (req, res) => {
     const options = {
       includeInactive: req.query.includeInactive === "true" || false,
       search: req.query.search || "",
-      page: req.query.page || 1,
-      limit: req.query.limit || 10,
+      // page: req.query.page || 1,
+      // limit: req.query.limit || 10,
+      page: Number(req.query.page) || 1,
+      limit: Number(req.query.limit) || 10,
       orderBy: req.query.orderBy || "createdAt",
       order: req.query.order || "ASC",
       searchFields: ["department_name", "email", "phone"],

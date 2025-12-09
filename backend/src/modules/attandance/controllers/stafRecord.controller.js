@@ -99,21 +99,26 @@ import Branch from "../../employee/models/branch.model.js";
 import PersonnelEmployee from "../models/personnel_employee.models.js";
 import IclockTransaction from "../../attandance/models/iclocktransaction.models.js";
 
+
 export const getAttendanceReport = async (req, res) => {
   try {
     const { year, month } = req.query;
     const queryYear = year || new Date().getFullYear();
     const queryMonth = month || new Date().getMonth() + 1;
 
-    // ✅ Generate all days for the month in JS
+    // ---------------------------------------------------------
+    // Generate all dates for selected month (YYYY-MM-DD)
+    // ---------------------------------------------------------
     const daysInMonth = new Date(queryYear, queryMonth, 0).getDate();
     const dateList = Array.from({ length: daysInMonth }, (_, i) =>
       new Date(queryYear, queryMonth - 1, i + 1).toISOString().split("T")[0]
     );
 
-    // ✅ Fetch employee + department + branch + designation info
+    // ---------------------------------------------------------
+    // Fetch EMPLOYEES (from HRMS DB)
+    // ---------------------------------------------------------
     const employees = await Employee.findAll({
-      attributes: ["id", "emp_id", "attendance_id", "first_name"],
+      attributes: ["id", "emp_id", "first_name"],
       include: [
         {
           model: EmployeeDetail,
@@ -142,24 +147,36 @@ export const getAttendanceReport = async (req, res) => {
               required: false
             }
           ]
-        },
-        {
-          model: PersonnelEmployee,
-          as: "attendance",
-          attributes: ["emp_code"],
-          required: false
         }
       ]
     });
 
-    // ✅ Fetch attendance logs for the month
+    // ---------------------------------------------------------
+    // Fetch ATTENDANCE PROFILES (from ATT DB - NO JOIN)
+    // ---------------------------------------------------------
+    const attendanceProfiles = await PersonnelEmployee.findAll({
+      attributes: ["emp_code", "first_name"]
+    });
+
+    const attMap = {};
+    for (const ap of attendanceProfiles) {
+      const row = ap.get({ plain: true });
+      attMap[row.emp_code] = row; // emp_code → row
+    }
+
+    // ---------------------------------------------------------
+    // Fetch ATTENDANCE PUNCH LOGS for selected month
+    // ---------------------------------------------------------
     const transactions = await IclockTransaction.findAll({
       attributes: [
         "emp_code",
         [fn("DATE", col("punch_time")), "punch_date"],
         [fn("MIN", col("punch_time")), "first_punch_time"],
         [
-          fn("GROUP_CONCAT", literal("DISTINCT punch_state ORDER BY punch_time SEPARATOR ','")),
+          fn(
+            "GROUP_CONCAT",
+            literal("DISTINCT punch_state ORDER BY punch_time SEPARATOR ','")
+          ),
           "punch_states"
         ]
       ],
@@ -174,7 +191,7 @@ export const getAttendanceReport = async (req, res) => {
       group: ["emp_code", literal("DATE(punch_time)")]
     });
 
-    // Convert transactions to quick lookup
+    // Convert to fast lookup map → txMap[emp_code][date]
     const txMap = {};
     for (const tx of transactions) {
       const data = tx.get({ plain: true });
@@ -182,17 +199,24 @@ export const getAttendanceReport = async (req, res) => {
       txMap[data.emp_code][data.punch_date] = data;
     }
 
-    // ✅ Construct attendance matrix
+    // ---------------------------------------------------------
+    // Build FINAL ATTENDANCE REPORT
+    // ---------------------------------------------------------
     const report = [];
+
     for (const emp of employees) {
       const e = emp.get({ plain: true });
-      const empCode = e.attendance?.emp_code;
+
+      // Find matching attendance profile by emp_id
+      const empCode = attMap[e.emp_id]?.emp_code || null;
+
       const dept = e.details?.department?.department_name || null;
       const desg = e.details?.designation?.role_name || null;
       const branch = e.details?.branch?.branch_name || null;
 
       for (const date of dateList) {
         const tx = empCode && txMap[empCode]?.[date];
+
         report.push({
           emp_id: e.emp_id,
           first_name: e.first_name,
@@ -207,19 +231,24 @@ export const getAttendanceReport = async (req, res) => {
       }
     }
 
-    res.status(200).json({
+    // ---------------------------------------------------------
+    // SEND RESPONSE
+    // ---------------------------------------------------------
+    return res.status(200).json({
       message: "Attendance report fetched successfully",
       year: queryYear,
       month: queryMonth,
       data: report
     });
+
   } catch (error) {
     console.error("Error fetching attendance report:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
 
+//====================================================================================
 // -- ✅ Set your dynamic month and year
 // SET @year := 2025;
 // SET @month := 10;
