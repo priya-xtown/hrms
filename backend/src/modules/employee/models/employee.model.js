@@ -20,6 +20,7 @@ const Employee = sequelize.define(
     },
     attendance_id: {
       type: DataTypes.STRING,
+      unique: true,
       allowNull: false,   // allow null to avoid insert failures (controller sets it)
     },
     first_name: {
@@ -28,7 +29,7 @@ const Employee = sequelize.define(
     },
     last_name: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     date_of_joining: {
       type: DataTypes.DATEONLY,

@@ -19,6 +19,13 @@ router.get(
   employeeController.getEmpCodeByName
 );
 
+router.get(
+  "/getEmployees",
+  verifyToken,
+  authorizeRole(["admin", "superadmin", "users"]),
+  employeeController.getEmployees
+);
+
 // CREATE
 router.post(
   "/createEmployee",

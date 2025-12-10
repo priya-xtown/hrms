@@ -61,18 +61,127 @@ export const getEmpCodeByName = async (req, res) => {
   }
 };
 
+export const getEmployees = async (req, res) => {
+  try {
+    const employees = await Employee.findAll({
+      attributes: [
+        "id",
+        "emp_id",
+        "attendance_id",
+        [
+          sequelize.fn(
+            "CONCAT",
+            sequelize.col("first_name"),
+            " ",
+            sequelize.col("last_name")
+          ),
+          "name",
+        ],
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: employees,
+    });
+  } catch (error) {
+    console.error("GET employees error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
 export const createEmployee = async (req, res) => {
   try {
-    const { first_name, last_name, emp_id, ...otherFields } = req.body;
+    const { first_name, attendance_id, emp_id, ...otherFields } = req.body;
 
-    if (!first_name || !last_name) {
-      return res.status(400).json({ message: "First name and last name are required" });
+    if (!first_name) {
+      return res.status(400).json({
+        message: "First name is required",
+      });
     }
 
+    const emp_code = attendance_id;
+    if (!emp_code) {
+      return res.status(400).json({
+        message: "Attendance ID is required",
+      });
+    }
+
+    // Normalize name
+    const inputFirst = first_name.trim().toLowerCase();
+
+    // ============================================================
+    // 1️⃣ ATT DB — Find by emp_code
+    // ============================================================
+    const attByCode = await PersonnelEmployee.findOne({
+      where: { emp_code },
+    });
+
+    // ============================================================
+    // 2️⃣ ATT DB — Find by first_name ONLY
+    // ============================================================
+    const attByFirstName = await PersonnelEmployee.findOne({
+      where: {
+        first_name,
+      },
+    });
+
+    // ============================================================
+    // CASE A — emp_code NOT found
+    // ============================================================
+    if (!attByCode) {
+      if (attByFirstName) {
+        return res.status(400).json({
+          message:
+            "Employee name already exists in ATT database with a different Attendance ID.",
+          existing_emp_code: attByFirstName.emp_code,
+        });
+      }
+      // Allowed → new name + new emp_code
+    }
+
+    // ============================================================
+    // CASE B — emp_code EXISTS → validate first_name
+    // ============================================================
+    if (attByCode) {
+      const dbFirst = (attByCode.first_name || "").trim().toLowerCase();
+
+      if (dbFirst !== inputFirst) {
+        return res.status(400).json({
+          message:
+            "Attendance ID already exists but belongs to another employee.",
+          att_db_name: attByCode.first_name,
+          input_name: first_name,
+        });
+      }
+      // Allowed → same first_name + same emp_code
+    }
+
+    // ============================================================
+    // 3️⃣ HRMS DB CHECK
+    // ============================================================
+    const hrmsRecord = await Employee.findOne({
+      where: { attendance_id: emp_code },
+    });
+
+    if (hrmsRecord) {
+      return res.status(400).json({
+        message: "Attendance ID already exists in HRMS database",
+      });
+    }
+
+    // ============================================================
+    // 4️⃣ CREATE EMPLOYEE
+    // ============================================================
     const payload = {
       first_name,
-      last_name,
       emp_id,
+      attendance_id: emp_code,
       ...otherFields,
       profile_picture: req.file ? req.file.filename : null,
       created_by: req.user?.id || "system",
@@ -84,6 +193,7 @@ export const createEmployee = async (req, res) => {
       message: "Employee added successfully",
       data: newEmployee,
     });
+
   } catch (error) {
     console.error("❌ Error in createEmployee:", error);
     return res.status(500).json({
@@ -93,9 +203,6 @@ export const createEmployee = async (req, res) => {
   }
 };
 
-// ============================================================
-// 🔹 Update Employee
-// ============================================================
 export const updateEmployee = async (req, res) => {
   try {
     const { id } = req.params;
@@ -207,7 +314,6 @@ export const getAllEmployees = async (req, res) => {
   }
 };
 
-
 // ============================================================
 // 🔹 Get Employee by ID
 // ============================================================
@@ -277,68 +383,6 @@ export const deleteEmployee = async (req, res) => {
     });
   }
 };
-
-// export const addEmployeeFullInfo = async (req, res) => {
-//   const transaction = await sequelize.transaction();
-
-//   try {
-//     const { employee_id } = req.body;
-//     if (!employee_id) {
-//       return res.status(400).json({ message: "employee_id is required" });
-//     }
-
-//     const detailsData = req.body.details ? JSON.parse(req.body.details) : {};
-//     const emergencyData = req.body.emergency ? JSON.parse(req.body.emergency) : [];
-
-//     const userId = req.user.id; // <-- from token
-
-//     // Employee Details
-//     const employeeDetails = await EmployeeDetails.create(
-//       { ...detailsData, employee_id, created_by: userId, updated_by: userId },
-//       { transaction }
-//     );
-// const personalDetId = employeeDetails.id; // <-- IMPORTANT
-//     // Employee Documents
-//     const docFields = [
-//       "resume","aadhar","pan","degree","marksheet","relieving","experience",
-//       "offer","passport","driving","addressproof","bankproof"
-//     ];
-
-//     const uploadedDocs = {};
-//     docFields.forEach((field) => {
-//       if (req.files && req.files[field]) {
-//         uploadedDocs[field] = path.basename(req.files[field][0].path);
-//       }
-//     });
-
-//     const employeeDocuments = await EmployeeDocuments.create(
-//       { employee_id, personalDetId, ...uploadedDocs, created_by: userId, updated_by: userId },
-//       { transaction }
-//     );
-
-//     // Employee Emergency Contacts
-//     const employeeEmergencies = await Promise.all(
-//       emergencyData.map((contact) =>
-//         EmployeeEmergency.create({ ...contact, employee_id, personalDetId, created_by: userId, updated_by: userId }, { transaction })
-//       )
-//     );
-
-//     await transaction.commit();
-
-//     return res.status(201).json({
-//       message: "Employee full info added successfully",
-//       data: { details: employeeDetails, documents: employeeDocuments, emergencies: employeeEmergencies },
-//     });
-//   } catch (error) {
-//     await transaction.rollback();
-//     console.error("❌ Error adding employee info:", error);
-//     return res.status(500).json({
-//       message: "Error adding employee information",
-//       error: error.message,
-//     });
-//   }
-// };
-
 
 export const addEmployeeFullInfo = async (req, res) => {
   const transaction = await sequelize.transaction();
@@ -445,178 +489,6 @@ export const addEmployeeFullInfo = async (req, res) => {
     });
   }
 };
-
-
-// export const updateEmployeeFullInfo = async (req, res) => {
-//   const transaction = await sequelize.transaction();
-
-//   try {
-//     const { employee_id } = req.params; // employee id from URL
-//     if (!employee_id) {
-//       return res.status(400).json({ message: "employee_id is required" });
-//     }
-
-//     const detailsData = req.body.details ? JSON.parse(req.body.details) : {};
-//     const userId = req.user.id; // from token
-
-//     // 🟢 1️⃣ Handle EmployeeDetails
-//     const existingDetails = await EmployeeDetails.findOne({ where: { employee_id }, transaction });
-
-//     if (existingDetails) {
-//       // Compare only if detailsData has keys
-//       if (Object.keys(detailsData).length > 0) {
-//         const hasChanges = Object.keys(detailsData).some(
-//           (key) => detailsData[key] != existingDetails[key]
-//         );
-
-//         if (hasChanges) {
-//           await existingDetails.update(
-//             { ...detailsData, updated_by: userId },
-//             { transaction }
-//           );
-//           console.log("🟢 Employee details updated.");
-//         } else {
-//           console.log("⏩ No changes in employee details, keeping old data.");
-//         }
-//       } else {
-//         console.log("⏩ No new details sent, keeping old data.");
-//       }
-//     } else {
-//       // If details didn’t exist, create a new one
-//       await EmployeeDetails.create(
-//         { ...detailsData, employee_id, created_by: userId, updated_by: userId },
-//         { transaction }
-//       );
-//       console.log("🟢 Employee details created (no existing record).");
-//     }
-
-//     // 🟢 2️⃣ Handle EmployeeDocuments
-//     const docFields = [
-//       "resume", "aadhar", "pan", "degree", "marksheet", "relieving",
-//       "experience", "offer", "passport", "driving", "addressproof", "bankproof"
-//     ];
-
-//     const uploadedDocs = {};
-//     docFields.forEach((field) => {
-//       if (req.files && req.files[field]) {
-//         uploadedDocs[field] = path.basename(req.files[field][0].path);
-//       }
-//     });
-
-//     const existingDocs = await EmployeeDocuments.findOne({ where: { employee_id }, transaction });
-
-//     if (existingDocs) {
-//       if (Object.keys(uploadedDocs).length > 0) {
-//         const hasDocChanges = Object.keys(uploadedDocs).some(
-//           (key) => uploadedDocs[key] != existingDocs[key]
-//         );
-
-//         if (hasDocChanges) {
-//           await existingDocs.update(
-//             { ...uploadedDocs, updated_by: userId },
-//             { transaction }
-//           );
-//           console.log("🟢 Employee documents updated.");
-//         } else {
-//           console.log("⏩ No new document changes, keeping old files.");
-//         }
-//       } else {
-//         console.log("⏩ No document uploads provided, keeping old files.");
-//       }
-//     } else {
-//       await EmployeeDocuments.create(
-//         { employee_id, ...uploadedDocs, created_by: userId, updated_by: userId },
-//         { transaction }
-//       );
-//       console.log("🟢 Employee documents created (no existing record).");
-//     }
-
-//     // 🟢 3️⃣ EmployeeEmergency Contacts (update without duplication)
-// if (req.body.emergency) {
-//   let emergencyData = [];
-//   try {
-//     if (req.body.emergency.trim() !== "") {
-//       emergencyData = JSON.parse(req.body.emergency);
-//     }
-//   } catch (err) {
-//     console.warn("⚠️ Invalid emergency JSON:", err.message);
-//   }
-
-//   const existingContacts = await EmployeeEmergency.findAll({ where: { employee_id }, transaction });
-
-//   // Update or create contacts
-//   const updatedOrCreatedIds = [];
-
-//   for (const contact of emergencyData) {
-//     if (contact.id) {
-//       // Check if the contact already exists
-//       const existing = existingContacts.find((c) => c.id === contact.id);
-//       if (existing) {
-//         // Update only if there are actual changes
-//         const hasChanges = Object.keys(contact).some(
-//           (key) => contact[key] != existing[key]
-//         );
-
-//         if (hasChanges) {
-//           await existing.update(
-//             { ...contact, updated_by: userId },
-//             { transaction }
-//           );
-//           console.log(`🟢 Updated emergency contact ${contact.id}`);
-//         } else {
-//           console.log(`⏩ No changes for contact ${contact.id}`);
-//         }
-
-//         updatedOrCreatedIds.push(contact.id);
-//       } else {
-//         // If ID provided but not found, create new
-//         const newContact = await EmployeeEmergency.create(
-//           { ...contact, employee_id, created_by: userId, updated_by: userId },
-//           { transaction }
-//         );
-//         updatedOrCreatedIds.push(newContact.id);
-//         console.log(`🟢 Created new contact (id mismatch): ${newContact.id}`);
-//       }
-//     } else {
-//       // No ID means new contact
-//       const newContact = await EmployeeEmergency.create(
-//         { ...contact, employee_id, created_by: userId, updated_by: userId },
-//         { transaction }
-//       );
-//       updatedOrCreatedIds.push(newContact.id);
-//       console.log("🟢 Created new emergency contact");
-//     }
-//   }
-
-//   // Delete contacts not included in the new request
-//   const toDelete = existingContacts.filter(
-//     (c) => !updatedOrCreatedIds.includes(c.id)
-//   );
-//   for (const del of toDelete) {
-//     await del.destroy({ transaction });
-//     console.log(`🗑️ Deleted old emergency contact: ${del.id}`);
-//   }
-
-// } else {
-//   console.log("⏩ Skipping emergency contact update since none was provided.");
-// }
-
-//     await transaction.commit();
-
-//     return res.status(200).json({
-//       message: "Employee full info updated successfully",
-//     });
-//   } catch (error) {
-//     await transaction.rollback();
-//     console.error("❌ Error updating employee info:", error);
-//     return res.status(500).json({
-//       message: "Error updating employee information",
-//       error: error.message,
-//     });
-//   }
-// };
-
-
 
 export const updateEmployeeFullInfo = async (req, res) => {
   const transaction = await sequelize.transaction();
@@ -923,57 +795,7 @@ export const getEmployeeDetById = async (req, res) => {
 
 
 // // ✅ 1. Registered Employees
-// export const getRegisteredEmployees = async (req, res) => {
-//   try {
-//     const employees = await Employee.findAll({
-//       where: { deleted_at: null },
-//       include: [
-//         {
-//           model: EmployeeDetails,
-//           as: "details",
-//           required: true, // INNER JOIN (only registered)
-//         },
-//       ],
-//     });
 
-//     return res.status(200).json({
-//       message: "Registered employees fetched successfully",
-//       data: employees,
-//     });
-//   } catch (error) {
-//     console.error("❌ Error in getRegisteredEmployees:", error);
-//     res.status(500).json({ message: "Server error", error: error.message });
-//   }
-// };
-
-// // // ✅ 2. Unregistered Employees
-export const getUnregisteredEmployees = async (req, res) => {
-  try {
-    const employees = await Employee.findAll({
-      where: { deleted_at: null },
-      include: [
-        {
-          model: EmployeeDetails,
-          as: "details",
-          required: false, // LEFT JOIN
-        },
-      ],
-      // ✅ Filter employees who have no details
-      having: sequelize.literal(`details.id IS NULL`),
-      subQuery: false,
-    });
-
-    return res.status(200).json({
-      message: "Unregistered employees fetched successfully",
-      data: employees,
-    });
-  } catch (error) {
-    console.error("❌ Error in getUnregisteredEmployees:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-// ✅ Registered Employees (Paginated + Search + Sorting)
 export const getRegisteredEmployees = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -1022,62 +844,40 @@ export const getRegisteredEmployees = async (req, res) => {
   }
 };
 
-// export const getUnregisteredEmployees = async (req, res) => {
-//   try {
-//     let { page = 1, limit = 10 } = req.query;
+// ✅ Unregistered Employees (Paginated + Search + Sorting)
 
-//     page = parseInt(page);
-//     limit = parseInt(limit);
-//     const offset = (page - 1) * limit;
+export const getUnregisteredEmployees = async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
 
-//     // ---------- 1) TOTAL COUNT (SAFE) ---------- //
-//     const total = await Employee.count({
-//       where: { deleted_at: null },
-//       include: [
-//         {
-//           model: EmployeeDetails,
-//           as: "details",
-//           required: false,
-//         },
-//       ],
-//       distinct: true,
-//       col: "Employee.id",
-//       having: sequelize.literal("details.id IS NULL"),
-//       subQuery: false,
-//     });
+    const service = new BaseService(Employee);
 
-//     // ---------- 2) PAGINATED RESULT ---------- //
-//     const employees = await Employee.findAll({
-//       where: { deleted_at: null },
-//       include: [
-//         {
-//           model: EmployeeDetails,
-//           as: "details",
-//           required: false,
-//         },
-//       ],
-//       having: sequelize.literal("details.id IS NULL"),
-//       offset,
-//       limit,
-//       subQuery: false,
-//     });
+    const response = await service.getAll({
+      page: Number(page),
+      limit: Number(limit),
+      extraOptions: {
+        include: [
+          {
+            model: EmployeeDetails,
+            as: "details",
+            required: false,
+          },
+        ],
+        having: sequelize.literal(`details.id IS NULL`),
+        subQuery: false,
+      },
+    });
 
-//     return res.status(200).json({
-//       message: "Unregistered employees fetched successfully",
-//       total,
-//       page,
-//       limit,
-//       totalPages: Math.ceil(total / limit),
-//       data: employees,
-//     });
+    res.status(200).json({
+      message: "Unregistered employees fetched successfully",
+      ...response,
+    });
 
-//   } catch (error) {
-//     console.error("❌ Error in getUnregisteredEmployees:", error);
-//     res.status(500).json({ message: "Server error", error: error.message });
-//   }
-// };
-
-
+  } catch (error) {
+    console.error("❌ Error in getUnregisteredEmployees:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
 
 
 
@@ -1093,5 +893,6 @@ export default {
   getEmpCodeByName,
   getEmployeeDetById,
   getRegisteredEmployees,
-  getUnregisteredEmployees
+  getUnregisteredEmployees,
+  getEmployees
 };

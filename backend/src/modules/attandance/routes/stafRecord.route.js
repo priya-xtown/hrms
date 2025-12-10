@@ -1,5 +1,5 @@
 import express from "express";
-import { getAttendanceReport , getAttendanceSummary} from "../controllers/stafRecord.controller.js";
+import { getAttendanceReport } from "../controllers/stafRecord.controller.js";
 
 const router = express.Router();
 
@@ -8,6 +8,6 @@ router.get("/getAttendanceReport", getAttendanceReport);
 
 // ✅ GET attendance report by month & year
 // Example: GET /api/attendance/getAttendanceSummary?year=2025&month=10
-router.get("/getAttendanceSummary", getAttendanceSummary);
+//router.get("/getAttendanceSummary", getAttendanceSummary);
 
 export default router;

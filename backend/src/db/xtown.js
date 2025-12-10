@@ -60,19 +60,19 @@ const Sequelize = SequelizePkg;
 const { DataTypes, Op } = SequelizePkg;
 
 //✅ Create Sequelize instance for xtown database
-// const att = new Sequelize("att", "ramya", "ramya", {
-//   host: "192.168.1.150",
-//   port: 3306,
-//   dialect: "mysql",
-//   logging: false, // optional
-// });
-
-const att = new Sequelize("xtown", "root", "priya@1234", {
-  host: "127.1.1.0",
+const att = new Sequelize("att", "ramya", "ramya", {
+  host: "192.168.1.150",
   port: 3306,
   dialect: "mysql",
   logging: false, // optional
 });
+
+// const att = new Sequelize("xtown", "root", "priya@1234", {
+//   host: "127.1.1.0",
+//   port: 3306,
+//   dialect: "mysql",
+//   logging: false, // optional
+// });
 
 // ✅ Authenticate connection
 (async () => {
