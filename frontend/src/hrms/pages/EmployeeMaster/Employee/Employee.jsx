@@ -361,27 +361,6 @@ const Employee = () => {
     // reset editFile when opening
     setEditFile(null);
 
-    // Autofill edit with existing image as File (blob) so submit includes it if unchanged
-    // if (preview) {
-    //   (async () => {
-    //     try {
-    //       const resp = await fetch(preview, { cache: "no-store" });
-    //       const blob = await resp.blob();
-    //       const name = (() => {
-    //         try {
-    //           return new URL(preview).pathname.split("/").pop() || "profile.jpg";
-    //         } catch (e) {
-    //           return "profile.jpg";
-    //         }
-    //       })();
-    //       const fileObj = new File([blob], name, { type: blob.type || "image/jpeg" });
-    //       setEditFile(fileObj);
-    //       editForm.setFieldsValue({ profile_picture: fileObj });
-    //     } catch (e) {
-    //       // ignore fetch errors; user can upload a new file manually
-    //     }
-    //   })();
-    // }
     if (preview) {
       (async () => {
         try {

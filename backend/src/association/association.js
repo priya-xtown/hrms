@@ -315,31 +315,24 @@ Leave.belongsTo(Employee, {
 // Overtime
 // Employee.emp_id → Overtime.emp_id
 // --------------------------------------------------------
-Employee.hasMany(Overtime, {
-  foreignKey: "emp_id",
-  sourceKey: "emp_id",
-  as: "overtimes",
-});
+// --------------------------------------------------------
+// Overtime Associations
+// --------------------------------------------------------
 
+// Employee.emp_id  →  Overtime.emp_id
 Overtime.belongsTo(Employee, {
   foreignKey: "emp_id",
   targetKey: "emp_id",
   as: "employee",
 });
 
-// --------------------------------------------------------
-// Attendance → Overtime
-// attendance.id → overtime.attendance_id
-// --------------------------------------------------------
-Attendance.hasMany(Overtime, {
-  foreignKey: "attendance_id",
-  as: "overtimes",
-});
-
+// attendance.id  →  overtime.attendance_id
 Overtime.belongsTo(Attendance, {
   foreignKey: "attendance_id",
+  targetKey: "id",
   as: "attendance",
 });
+
 
 
 export {

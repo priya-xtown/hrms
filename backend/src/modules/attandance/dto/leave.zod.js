@@ -2,33 +2,50 @@ import { z } from "zod";
 
 // ✅ 1️⃣ Create Leave Schema
 export const createLeaveSchema = z.object({
-  emp_id: z.string().min(1, "Employee ID is required"),
-  leave_type: z.enum(["Casual", "Sick", "Permission", "Other"], {
-    required_error: "Leave type is required",
-  }),
-  from_date: z
-    .string()
-    .refine((val) => !isNaN(Date.parse(val)), "Invalid from date"),
-  to_date: z
-    .string()
-    .refine((val) => !isNaN(Date.parse(val)), "Invalid to date"),
-  from_time: z
-    .string()
-    .optional()
-    .nullable()
-    .refine(
-      (val) => !val || /^([01]\d|2[0-3]):([0-5]\d)$/.test(val),
-      "Invalid time format (use HH:mm)"
-    ),
-  to_time: z
-    .string()
-    .optional()
-    .nullable()
-    .refine(
-      (val) => !val || /^([01]\d|2[0-3]):([0-5]\d)$/.test(val),
-      "Invalid time format (use HH:mm)"
-    ),
-  reason: z.string().optional().nullable(),
+//   emp_id: z.string().min(1, "Employee ID is required"),
+//   leave_type: z.enum(["Casual", "Sick", "Permission", "Other"], {
+//     required_error: "Leave type is required",
+//   }),
+//   from_date: z
+//     .string()
+//     .refine((val) => !isNaN(Date.parse(val)), "Invalid from date"),
+//   to_date: z
+//     .string()
+//     .refine((val) => !isNaN(Date.parse(val)), "Invalid to date"),
+//   from_time: z
+//     .string()
+//     .optional()
+//     .nullable()
+//     .refine(
+//       (val) => !val || /^([01]\d|2[0-3]):([0-5]\d)$/.test(val),
+//       "Invalid time format (use HH:mm)"
+//     ),
+//   to_time: z
+//     .string()
+//     .optional()
+//     .nullable()
+//     .refine(
+//       (val) => !val || /^([01]\d|2[0-3]):([0-5]\d)$/.test(val),
+//       "Invalid time format (use HH:mm)"
+//     ),
+//   reason: z.string().optional().nullable(),
+
+
+
+// });
+
+
+
+  emp_id: z.string(),
+  leave_type: z.enum(["Casual", "Sick", "Permission", "Other"]),
+  from_date: z.string(),
+  to_date: z.string(),
+  from_time: z.string().nullable().optional(),
+  to_time: z.string().nullable().optional(),
+  reason: z.string().optional(),
+
+  // 🔥 THIS WAS MISSING
+  status: z.enum(["Pending", "Approved", "Denied"]).optional(),
 });
 
 // ✅ 2️⃣ Update Leave Schema

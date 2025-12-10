@@ -48,7 +48,8 @@ const Leave = sequelize.define(
     },
     status: {
       type: DataTypes.ENUM("Pending", "Approved", "Denied"),
-      defaultValue: "Pending",
+        defaultValue: "Pending",  
+  allowNull: false
 
     },
     remarks: {

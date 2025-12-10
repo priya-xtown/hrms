@@ -11,15 +11,15 @@ const Overtime = sequelize.define(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    attendance_id: {
-      type: DataTypes.UUID,
-      allowNull: false,
-      references: {
-        model: "attendances",
-        key: "id",
-      },
-      onDelete: "CASCADE",
-    },
+    // attendance_id: {
+    //   type: DataTypes.UUID,
+    //   allowNull: false,
+    //   references: {
+    //     model: "attendances",
+    //     key: "id",
+    //   },
+    //   onDelete: "CASCADE",
+    // },
     emp_id: {
       type: DataTypes.STRING,
       allowNull: false,

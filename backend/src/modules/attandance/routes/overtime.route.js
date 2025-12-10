@@ -4,7 +4,11 @@ import { validate } from "../../../middleware/validate.js";
 import { overtimeSchema, statusUpdateSchema } from "../dto/overtime.zod.js";
 import {
   createOvertime,
-  // getAllOvertime,
+  deleteOvertime,
+  getAllOvertime,
+  getOvertimeById,
+  updateOvertime,
+
   // updateOvertimeStatus,
 } from "../controllers/overtime.controllers.js";
 import { verifyToken } from "../../../middleware/auth.js";
@@ -16,10 +20,12 @@ const router = express.Router();
 router.post("/createOvertime",verifyToken,authorizeRole(["admin", "superadmin", "user"]), validate(overtimeSchema),  createOvertime);
 
 // ✅ Get all overtime records
-// router.get("/getAllOvertime",verifyToken,authorizeRole(["admin", "superadmin", "user"]), getAllOvertime);
+router.get("/getAllOvertime",verifyToken,authorizeRole(["admin", "superadmin", "user"]), getAllOvertime);
 
-// ✅ Update overtime status (Approved / Rejected)
-// router.patch("/updateOvertime/:id",verifyToken,authorizeRole(["admin", "superadmin", "user"]), validate(statusUpdateSchema), updateOvertimeStatus);
+//  getbyid
+router.get("/getOvertimeById/:id",verifyToken,authorizeRole(["admin", "superadmin", "user"]),getOvertimeById);
+router.put("/updateOvertime/:id",verifyToken,authorizeRole(["admin", "superadmin", "user"]),updateOvertime);
+router.delete("/deleteOvertime/:id",verifyToken,authorizeRole (["admin", "superadmin", "user"]),deleteOvertime);
 
 export default router;
 

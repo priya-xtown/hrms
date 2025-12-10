@@ -6,6 +6,8 @@ const AttenOd = {
   create: (data) => api.post("addondutty/createAddondutty", data),
   update: (id, data) => api.put(`addondutty/updateAddondutty/${id}`, data),
   delete: (id) => api.delete(`addondutty/deleteAddondutty/${id}`),
+   // Employee dropdown API
+  getEmployees: () => api.get("employee/getEmployees"),
 };
 
 export default AttenOd;

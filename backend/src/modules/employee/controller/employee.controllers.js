@@ -61,6 +61,7 @@ export const getEmpCodeByName = async (req, res) => {
   }
 };
 
+
 export const getEmployees = async (req, res) => {
   try {
     const employees = await Employee.findAll({
@@ -884,6 +885,7 @@ export const getUnregisteredEmployees = async (req, res) => {
 
 export default {
   createEmployee,
+  getEmployees,
   updateEmployee,
   getAllEmployees,
   getEmployeeById,
