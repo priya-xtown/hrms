@@ -117,7 +117,7 @@ app.listen(port, host, async () => {
   try {
     // Sync tables for both databases
 
-    await hrmsSequelize.sync();     
+    await hrmsSequelize.sync({});     
     // await hrmsSequelize.sync({force : true});      // Sync hrms_demo
     await attnSequelize.sync();  // Sync xtown / att
 

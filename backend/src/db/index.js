@@ -38,17 +38,17 @@ const { DataTypes, Op } = SequelizePkg;
 // const sequelize = new Sequelize("hrms_demo", "ramya", "ramya", {
 //   host: "192.168.1.150",
 
-const sequelize = new Sequelize("hrms", "ramya", "ramya", {
-  host: "192.168.1.150",
-  port: 3306,
-  dialect: "mysql",
-});
-
-// const sequelize = new Sequelize("hrms", "root", "priya@1234", {
-//   host: "127.0.0.1",
+// const sequelize = new Sequelize("hrms", "ramya", "ramya", {
+//   host: "192.168.1.150",
 //   port: 3306,
 //   dialect: "mysql",
 // });
+
+const sequelize = new Sequelize("hrms", "root", "priya@1234", {
+  host: "127.0.0.1",
+  port: 3306,
+  dialect: "mysql",
+});
 
 
 // Authenticate database connection inside async IIFE

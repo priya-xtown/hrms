@@ -37,11 +37,15 @@ export default function Designations() {
   const [total, setTotal] = useState(0);
   const [departments, setDepartments] = useState([]);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
-
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
-
   const [deptMap, setDeptMap] = useState({});
+ const [searchTerm, setSearchTerm] = useState("");
+
+  const handleSearch = (e) => {
+  const value = e.target.value.toLowerCase();
+  setSearchTerm(value);
+};
 
   // Fetch Departments and create map
   const fetchDepartments = async (page = 1) => {
@@ -304,7 +308,7 @@ setTotal(count);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-4">
+      {/* <div className="flex justify-between items-center mb-4">
         <p className="text-sm text-gray-500">Employee / Designations</p>
         <Button
           type="primary"
@@ -321,7 +325,27 @@ setTotal(count);
         <div className="flex flex-wrap gap-2 items-center">
           <Search placeholder="Search" style={{ width: 200 }} />
         </div>
-      </div>
+      </div> */}
+<div className="flex justify-between items-center mb-4">
+  <p className="text-sm text-gray-500">Employee / Designations</p>
+
+  <div className="flex items-center gap-2">
+    <Search placeholder="Search" style={{ width: 200 }} />
+
+    <Button
+      type="primary"
+      icon={<PlusOutlined />}
+      className="bg-orange-500 hover:bg-orange-600"
+      onClick={() => setIsAddModalOpen(true)}
+    >
+      Add Designation
+    </Button>
+  </div>
+</div>
+
+<div className="flex justify-between items-center mb-4">
+  <h2 className="font-semibold text-xl">Designation List</h2>
+</div>
 
       <div className="bg-white p-4 rounded-lg shadow">
         <Table

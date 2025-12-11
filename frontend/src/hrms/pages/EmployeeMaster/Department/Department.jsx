@@ -35,7 +35,13 @@ export default function Departments() {
   const [total, setTotal] = useState(0);
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
-  
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const handleSearch = (e) => {
+  const value = e.target.value.toLowerCase();
+  setSearchTerm(value);
+};
+
 const fetchDepartments = async (page = 1) => {
   try {
     setLoading(true);
@@ -272,7 +278,7 @@ const handleEdit = async (values) => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-4">
+      {/* <div className="flex justify-between items-center mb-4">
         <p className="text-sm text-gray-500">Employee / Departments</p>
         <Button
           type="primary"
@@ -290,7 +296,32 @@ const handleEdit = async (values) => {
          
           <Search placeholder="Search" style={{ width: 200 }} />
         </div>
-      </div>
+      </div> */}
+      <div className="flex justify-between items-center mb-4">
+  <p className="text-sm text-gray-500">Employee / Departments</p>
+
+  <div className="flex items-center gap-2">
+    <Search
+      placeholder="Search"
+      style={{ width: 200 }}
+      onChange={handleSearch} // Optional
+    />
+
+    <Button
+      type="primary"
+      icon={<PlusOutlined />}
+      className="bg-orange-500 hover:bg-orange-600"
+      onClick={() => setIsAddModalOpen(true)}
+    >
+      Add Department
+    </Button>
+  </div>
+</div>
+
+<div className="flex justify-between items-center mb-4">
+  <h2 className="font-semibold text-xl">Department List</h2>
+</div>
+
 
       <div className="bg-white p-1 rounded-lg shadow">
 

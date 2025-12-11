@@ -17,6 +17,42 @@ export const userService = {
     }
   },
 
+  sendOtp: async (identifier) => {
+    try {
+      const response = await api.post("/user/user/forgetpassword", { identifier });
+      message.success(response.data?.message || "OTP sent successfully!");
+      return response.data;
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Failed to send OTP";
+      message.error(errorMsg);
+      return error.response?.data || { success: false, message: errorMsg };
+    }
+  },
+
+  verifyOtp: async (identifier, otp) => {
+    try {
+      const response = await api.post("/user/user/verifyOTP", { identifier, otp });
+      message.success(response.data?.message || "OTP verified successfully!");
+      return response.data;
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Failed to verify OTP";
+      message.error(errorMsg);
+      return error.response?.data || { success: false, message: errorMsg };
+    }
+  },
+
+  resetPassword: async (identifier, newPassword) => {
+    try {
+      const response = await api.post("/user/user/resetPassword", { identifier, newPassword });
+      message.success(response.data?.message || "Password reset successfully!");
+      return response.data;
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Failed to reset password";
+      message.error(errorMsg);
+      return error.response?.data || { success: false, message: errorMsg };
+    }
+  },
+
   // ✅ Login user
   login: async (data) => {
     try {

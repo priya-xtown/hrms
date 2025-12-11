@@ -4,7 +4,7 @@ import logo from "../components/assets/Company_logo.png";
 import x_logo from "../components/assets/Dark Logo.png";
 import { FaEnvelope, FaEye, FaEyeSlash, FaPhone } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { message as antdMessage } from "antd";
+import { message as antdMessage, Modal, Form, Input, Button } from "antd";
 import Loading from "../utils/Loading";
 import { userService } from "../hrms/services/Userservice";
 
@@ -20,6 +20,13 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState("");
+  const [fpOpen, setFpOpen] = useState(false);
+  const [fpLoading, setFpLoading] = useState(false);
+  const [fpStep, setFpStep] = useState(1);
+  const [fpIdentifier, setFpIdentifier] = useState("");
+  const [fpOtp, setFpOtp] = useState("");
+  const [fpNewPassword, setFpNewPassword] = useState("");
+  const [fpConfirmPassword, setFpConfirmPassword] = useState("");
 
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const isValidMobile = (mobile) => /^\d{10}$/.test(mobile);
@@ -202,6 +209,9 @@ const Login = () => {
                 />
               )}
             </div>
+            <div className="forgot-password">
+            <a onClick={() => setFpOpen(true)}>Forgot Password?</a>
+          </div>
             {passwordError && (
               <div className="login-error-message">{passwordError}</div>
             )}
@@ -226,6 +236,278 @@ const Login = () => {
             </span>
           </div>
         </form>
+        {/* <Modal
+          open={fpOpen}
+          onCancel={() => {
+            setFpOpen(false);
+            setFpStep(1);
+            setFpIdentifier("");
+            setFpOtp("");
+            setFpNewPassword("");
+            setFpConfirmPassword("");
+          }}
+          footer={null}
+          title={fpStep === 1 ? "Forgot Password" : "Reset Password"}
+        >
+          {fpStep === 1 ? (
+            <Form
+              layout="vertical"
+              onFinish={async () => {
+                if (!fpIdentifier.trim()) {
+                  antdMessage.warning("Enter email or phone");
+                  return;
+                }
+                try {
+                  setFpLoading(true);
+                  const res = await userService.sendOtp(fpIdentifier.trim());
+                  if (res) {
+                    setFpStep(2);
+                  }
+                } catch (e) {
+                } finally {
+                  setFpLoading(false);
+                }
+              }}
+            >
+              <Form.Item label="Email or Phone" required>
+                <Input
+                  value={fpIdentifier}
+                  onChange={(e) => setFpIdentifier(e.target.value)}
+                  placeholder="Enter email or phone" style={{ width: 200 }}
+                />
+              </Form.Item >
+               <Form.Item className="flex justify-end gap-2">
+              <Button type="primary" htmlType="submit" loading={fpLoading} block>
+                Send OTP
+              </Button>
+              </Form.Item>
+            </Form>
+          ) : (
+            <Form
+              layout="vertical"
+              onFinish={async () => {
+                if (!fpOtp.trim()) {
+                  antdMessage.warning("Enter OTP");
+                  return;
+                }
+                if (!fpNewPassword.trim()) {
+                  antdMessage.warning("Enter new password");
+                  return;
+                }
+                if (fpNewPassword !== fpConfirmPassword) {
+                  antdMessage.warning("Passwords do not match");
+                  return;
+                }
+                try {
+                  setFpLoading(true);
+                  await userService.verifyOtp(fpIdentifier.trim(), fpOtp.trim());
+                  await userService.resetPassword(fpIdentifier.trim(), fpNewPassword.trim());
+                  antdMessage.success("Password reset successful");
+                  setFpOpen(false);
+                  setFpStep(1);
+                } catch (e) {
+                } finally {
+                  setFpLoading(false);
+                }
+              }}
+            >
+              <Form.Item label="OTP" required>
+                <Input value={fpOtp} onChange={(e) => setFpOtp(e.target.value)} placeholder="Enter OTP" />
+              </Form.Item>
+              <Form.Item label="New Password" required>
+                <Input.Password
+                  value={fpNewPassword}
+                  onChange={(e) => setFpNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                />
+              </Form.Item>
+              <Form.Item label="Confirm Password" required>
+                <Input.Password
+                  value={fpConfirmPassword}
+                  onChange={(e) => setFpConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                />
+              </Form.Item>
+              <Button type="primary" htmlType="submit" loading={fpLoading} block>
+                Reset Password
+              </Button>
+            </Form>
+          )}
+        </Modal> */}
+        <Modal
+  open={fpOpen}
+  onCancel={() => {
+    setFpOpen(false);
+    setFpStep(1);
+    setFpIdentifier("");
+    setFpOtp("");
+    setFpNewPassword("");
+    setFpConfirmPassword("");
+  }}
+  footer={null}
+  centered
+  width={380}
+  style={{ borderRadius: 12 }}
+>
+  <div style={{ padding: "10px 5px" }}>
+    {fpStep === 1 ? (
+      <div
+        style={{
+          padding: "20px",
+          borderRadius: 12,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+          background: "#fff",
+        }}
+      >
+        <h3 style={{ textAlign: "center", marginBottom: 20 }}>
+          🔐 Forgot Password
+        </h3>
+
+        <Form
+          layout="vertical"
+          onFinish={async () => {
+            if (!fpIdentifier.trim()) {
+              antdMessage.warning("Enter email or phone");
+              return;
+            }
+            try {
+              setFpLoading(true);
+              const res = await userService.sendOtp(fpIdentifier.trim());
+              if (res) setFpStep(2);
+            } catch (e) {
+            } finally {
+              setFpLoading(false);
+            }
+          }}
+        >
+          <Form.Item
+            label={<span style={{ fontWeight: 600 }}>Email or Phone</span>}
+            required
+          >
+            <Input
+              value={fpIdentifier}
+              onChange={(e) => setFpIdentifier(e.target.value)}
+              placeholder="Enter email or phone"
+              style={{ height: 42, borderRadius: 8 }}
+            />
+          </Form.Item>
+
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={fpLoading}
+            block
+            style={{
+              height: 42,
+              borderRadius: 8,
+              fontWeight: 600,
+              marginTop: 10,
+            }}
+          >
+            Send OTP
+          </Button>
+        </Form>
+      </div>
+    ) : (
+      <div
+        style={{
+          padding: "20px",
+          borderRadius: 12,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+          background: "#fff",
+        }}
+      >
+        <h3 style={{ textAlign: "center", marginBottom: 20 }}>
+          🔄 Reset Password
+        </h3>
+
+        <Form
+          layout="vertical"
+          onFinish={async () => {
+            if (!fpOtp.trim()) {
+              antdMessage.warning("Enter OTP");
+              return;
+            }
+            if (!fpNewPassword.trim()) {
+              antdMessage.warning("Enter new password");
+              return;
+            }
+            if (fpNewPassword !== fpConfirmPassword) {
+              antdMessage.warning("Passwords do not match");
+              return;
+            }
+            try {
+              setFpLoading(true);
+              await userService.verifyOtp(fpIdentifier.trim(), fpOtp.trim());
+              await userService.resetPassword(
+                fpIdentifier.trim(),
+                fpNewPassword.trim()
+              );
+              antdMessage.success("Password reset successful");
+              setFpOpen(false);
+              setFpStep(1);
+            } catch (e) {
+            } finally {
+              setFpLoading(false);
+            }
+          }}
+        >
+          <Form.Item
+            label={<span style={{ fontWeight: 600 }}>OTP</span>}
+            required
+          >
+            <Input
+              value={fpOtp}
+              onChange={(e) => setFpOtp(e.target.value)}
+              placeholder="Enter OTP"
+              style={{ height: 42, borderRadius: 8 }}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label={<span style={{ fontWeight: 600 }}>New Password</span>}
+            required
+          >
+            <Input.Password
+              value={fpNewPassword}
+              onChange={(e) => setFpNewPassword(e.target.value)}
+              placeholder="Enter new password"
+              style={{ height: 42, borderRadius: 8 }}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label={<span style={{ fontWeight: 600 }}>Confirm Password</span>}
+            required
+          >
+            <Input.Password
+              value={fpConfirmPassword}
+              onChange={(e) => setFpConfirmPassword(e.target.value)}
+              placeholder="Confirm new password"
+              style={{ height: 42, borderRadius: 8 }}
+            />
+          </Form.Item>
+
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={fpLoading}
+            block
+            style={{
+              height: 42,
+              borderRadius: 8,
+              fontWeight: 600,
+              marginTop: 10,
+            }}
+          >
+            Reset Password
+          </Button>
+        </Form>
+      </div>
+    )}
+  </div>
+</Modal>
+
       </div>
     </div>
   );
