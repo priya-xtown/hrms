@@ -375,8 +375,8 @@ export const getMonthlyAttendance = async (req, res) => {
           d.date_val AS punch_date,
           tx.punch_time,
           CASE 
-              WHEN tx.punch_time IS NOT NULL THEN 'PRESENT'
-              ELSE 'ABSENT'
+              WHEN tx.punch_time IS NOT NULL THEN 'P'
+              ELSE 'A'
           END AS status,
           tx.punch_states AS punch_state
       FROM hrms_employees AS h
@@ -522,8 +522,8 @@ for (const row of rows) {
 
   grouped[empKey].attendance[day] = status;
 
-  if (status === "PRESENT") grouped[empKey].present++;
-  if (status === "ABSENT") grouped[empKey].absent++;
+  if (status === "P") grouped[empKey].present++;
+  if (status === "A") grouped[empKey].absent++;
 }
 
 res.json({

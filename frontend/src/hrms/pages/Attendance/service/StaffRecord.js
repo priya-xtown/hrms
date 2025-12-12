@@ -16,18 +16,8 @@
 
 import api from "../../../services/api";
 
-const attendanceService = {
-  // Get full attendance report
-  getAttendanceReport: (params = {}) => 
-    api.get("staf/getAttendanceReport?year=2025&month=12", { params }),
-
-  // Get attendance summary
-  getAttendanceSummary: (params = {}) => 
-    api.get("staf/getAttendanceSummary?year=2025&month=10", { params }),
-
-  // Get all employees
-  getEmployees: () => 
-    api.get("employee/getEmployees"),
+const staffRecordService = {
+  getAttendanceReport: (params = {}) => api.get("staf/getAttendanceReport", { params }),
 };
 
-export default attendanceService;
+export default staffRecordService;

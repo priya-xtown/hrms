@@ -67,7 +67,7 @@ const { DataTypes, Op } = SequelizePkg;
 //   logging: false, // optional
 // });
 
-const att = new Sequelize("xtown", "root", "priya@1234", {
+const att = new Sequelize("att", "root", "priya@1234", {
   host: "127.1.1.0",
   port: 3306,
   dialect: "mysql",

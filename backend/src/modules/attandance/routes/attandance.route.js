@@ -2,6 +2,7 @@ import express from "express";
 import {
   createAttendance,
   getAllAttendance,
+   updateAttendance
 } from "../controllers/attendance.controllers.js";
 
 import { validate } from "../../../middleware/validate.js";
@@ -50,6 +51,12 @@ router.get("/getAllAttendance", verifyToken,authorizeRole(["admin","superadmin",
   // createAttendance
 
 router.get("/getAllAttendance",verifyToken,authorizeRole(["admin", "superadmin", "user"]),validate(getattendanceSchema),getAllAttendance)
+router.put("/updateAttendance/:id",
+  verifyToken,
+  authorizeRole(["admin", "superadmin", "user"]),
+  updateAttendance
+);
+
 
 
 

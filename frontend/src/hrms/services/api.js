@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://192.168.1.32:4001/hrms_api/v1/",
+  baseURL: "http://192.168.1.12:4001/hrms_api/v1/",
   headers: {
     "Content-Type": "application/json",
   },
