@@ -298,6 +298,253 @@
 // };
 
 
+// import { sequelize } from "../../../db/index.js";
+// import { att } from "../../../db/xtown.js";
+
+// export const getMonthlyAttendance = async (req, res) => {
+//   try {
+//     let { year, month } = req.query;
+
+//     year = year || new Date().getFullYear();
+//     month = month || new Date().getMonth() + 1;
+
+//     // 1️⃣ Set SQL variables
+//     await sequelize.query(`SET @year := :year`, {
+//       replacements: { year }
+//     });
+
+//     await sequelize.query(`SET @month := :month`, {
+//       replacements: { month }
+//     });
+
+//     // 2️⃣ MAIN SQL QUERY
+//     const sqlQuery = `
+//       WITH RECURSIVE month_dates AS (
+//           SELECT DATE(CONCAT(@year, '-', LPAD(@month, 2, '0'), '-01')) AS date_val
+//           UNION ALL
+//           SELECT DATE_ADD(date_val, INTERVAL 1 DAY)
+//           FROM month_dates
+//           WHERE MONTH(DATE_ADD(date_val, INTERVAL 1 DAY)) = @month
+//       ),
+
+//       hrms_employees AS (
+//           SELECT 
+//               e.id AS hrms_emp_id,
+//               e.emp_id,
+//               e.attendance_id,
+//               e.first_name,
+//               ed.departmentId,
+//               dept.department_name,
+//               ed.designationId,
+//               r.role_name AS designation_name,
+//               ed.branchId,
+//               br.branch_name,
+//               b.emp_code AS att_emp_code
+//           FROM hrms.employees AS e
+//           LEFT JOIN hrms.employee_details AS ed ON ed.employee_id = e.id
+//           LEFT JOIN hrms.departments AS dept 
+//               ON dept.id = ed.departmentId AND dept.is_active = 1
+//           LEFT JOIN hrms.roles AS r ON 
+//               r.id = ed.designationId 
+//               AND r.department_id = dept.id 
+//               AND r.is_active = 1
+//           LEFT JOIN hrms.branches AS br 
+//               ON br.id = ed.branchId AND br.is_active = 1
+//           LEFT JOIN att.personnel_employee AS b 
+//               ON e.attendance_id = b.emp_code
+//       ),
+
+//       tx AS (
+//           SELECT 
+//               emp_code,
+//               DATE(punch_time) AS punch_date,
+//               MIN(punch_time) AS punch_time,
+//               GROUP_CONCAT(DISTINCT punch_state ORDER BY punch_time SEPARATOR ',') AS punch_states
+//           FROM att.iclock_transaction
+//           WHERE YEAR(punch_time) = @year
+//             AND MONTH(punch_time) = @month
+//           GROUP BY emp_code, DATE(punch_time)
+//       )
+
+//       SELECT 
+//           h.emp_id,
+//           h.first_name,
+//           h.department_name,
+//           h.designation_name,
+//           h.branch_name,
+//           d.date_val AS punch_date,
+//           tx.punch_time,
+//           CASE 
+//               WHEN tx.punch_time IS NOT NULL THEN 'PRESENT'
+//               ELSE 'ABSENT'
+//           END AS status,
+//           tx.punch_states AS punch_state
+//       FROM hrms_employees AS h
+//       CROSS JOIN month_dates AS d
+//       LEFT JOIN tx
+//           ON tx.emp_code = h.att_emp_code
+//           AND tx.punch_date = d.date_val
+//       ORDER BY h.emp_id, d.date_val;
+//     `;
+
+//     // 3️⃣ EXECUTE QUERY
+//     const rows = await sequelize.query(sqlQuery, {
+//       type: sequelize.QueryTypes.SELECT
+//     });
+
+// // //     // // 4️⃣ GROUP BY EMPLOYEE
+// // //     // const grouped = {};
+
+// // //     // for (const row of rows) {
+// // //     //   const empKey = row.emp_id;
+
+// // //     //   if (!grouped[empKey]) {
+// // //     //     grouped[empKey] = {
+// // //     //       emp_id: row.emp_id,
+// // //     //       first_name: row.first_name,
+// // //     //       department_name: row.department_name,
+// // //     //       designation_name: row.designation_name,
+// // //     //       branch_name: row.branch_name,
+// // //     //       attendance: []
+// // //     //     };
+// // //     //   }
+
+// // //     //   grouped[empKey].attendance.push({
+// // //     //     punch_date: row.punch_date,
+// // //     //     punch_time: row.punch_time,
+// // //     //     status: row.status,
+// // //     //     punch_state: row.punch_state
+// // //     //   });
+// // //     // }
+
+// // //     // 4️⃣ GROUP BY EMPLOYEE WITH DATE → STATUS FORMAT
+// // // const grouped = {};
+
+// // // for (const row of rows) {
+// // //   const empKey = row.emp_id;
+
+// // //   if (!grouped[empKey]) {
+// // //     grouped[empKey] = {
+// // //       emp_id: row.emp_id,
+// // //       first_name: row.first_name,
+// // //       department_name: row.department_name,
+// // //       designation_name: row.designation_name,
+// // //       branch_name: row.branch_name,
+// // //       attendance: {}   // ← CHANGE HERE
+// // //     };
+// // //   }
+
+// // //   // Convert date to string YYYY-MM-DD
+// // //   const dateKey = row.punch_date.toISOString().split("T")[0];
+
+// // //   // Store only status ("PRESENT"/"ABSENT")
+// // //   grouped[empKey].attendance[dateKey] = row.status; 
+// // // }
+
+// // // res.json({
+// // //   success: true,
+// // //   year,
+// // //   month,
+// // //   data: Object.values(grouped),
+// // // });
+
+// //    // 4️⃣ GROUP BY EMPLOYEE → DATE → STATUS
+// // const grouped = {};
+
+// // for (const row of rows) {
+// //   const empKey = row.emp_id;
+
+// //   if (!grouped[empKey]) {
+// //     grouped[empKey] = {
+// //       emp_id: row.emp_id,
+// //       first_name: row.first_name,
+// //       department_name: row.department_name,
+// //       designation_name: row.designation_name,
+// //       branch_name: row.branch_name,
+// //       attendance: {},     // Store date → status
+// //       present: 0,
+// //       absent: 0,
+// //       leave: 0,
+// //       late_min: 0,
+// //       overtime: 0
+// //     };
+// //   }
+
+// //   // Format: YYYY-MM-DD → DD
+// //   const dateStr = row.punch_date.toISOString().split("T")[0];
+// //   const day = dateStr.split("-")[2];  // "01", "02", ...
+
+// //   const status = row.status;
+
+// //   grouped[empKey].attendance[day] = status;
+
+// //   // Auto counting
+// //   if (status === "PRESENT") grouped[empKey].present++;
+// //   if (status === "ABSENT") grouped[empKey].absent++;
+// // }
+
+// // // Convert to array
+// // res.json({
+// //   success: true,
+// //   year,
+// //   month,
+// //   data: Object.values(grouped),
+// // });
+
+
+// // 4️⃣ GROUP BY EMPLOYEE → DATE → STATUS
+// const grouped = {};
+
+// for (const row of rows) {
+//   const empKey = row.emp_id;
+
+//   if (!grouped[empKey]) {
+//     grouped[empKey] = {
+//       emp_id: row.emp_id,
+//       first_name: row.first_name,
+//       department_name: row.department_name,
+//       designation_name: row.designation_name,
+//       branch_name: row.branch_name,
+//       attendance: {},
+//       present: 0,
+//       absent: 0,
+//       leave: 0,
+//       late_min: 0,
+//       overtime: 0
+//     };
+//   }
+
+//   // Convert DATE to string safely
+//   const dateStr = String(row.punch_date);
+//   const day = dateStr.split("-")[2]; // "01", "02", ...
+
+//   const status = row.status;
+
+//   grouped[empKey].attendance[day] = status;
+
+//   if (status === "PRESENT") grouped[empKey].present++;
+//   if (status === "ABSENT") grouped[empKey].absent++;
+// }
+
+// res.json({
+//   success: true,
+//   year,
+//   month,
+//   data: Object.values(grouped),
+// });
+
+
+//   } catch (error) {
+//     console.error("Error fetching monthly attendance:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
 import { sequelize } from "../../../db/index.js";
 import { att } from "../../../db/xtown.js";
 
@@ -308,7 +555,7 @@ export const getMonthlyAttendance = async (req, res) => {
     year = year || new Date().getFullYear();
     month = month || new Date().getMonth() + 1;
 
-    // 1️⃣ Set SQL variables
+    // Set SQL variables
     await sequelize.query(`SET @year := :year`, {
       replacements: { year }
     });
@@ -317,7 +564,7 @@ export const getMonthlyAttendance = async (req, res) => {
       replacements: { month }
     });
 
-    // 2️⃣ MAIN SQL QUERY
+    // Main SQL Query (attendance + leave + OT + OD)
     const sqlQuery = `
       WITH RECURSIVE month_dates AS (
           SELECT DATE(CONCAT(@year, '-', LPAD(@month, 2, '0'), '-01')) AS date_val
@@ -340,18 +587,12 @@ export const getMonthlyAttendance = async (req, res) => {
               ed.branchId,
               br.branch_name,
               b.emp_code AS att_emp_code
-          FROM hrms.employees AS e
-          LEFT JOIN hrms.employee_details AS ed ON ed.employee_id = e.id
-          LEFT JOIN hrms.departments AS dept 
-              ON dept.id = ed.departmentId AND dept.is_active = 1
-          LEFT JOIN hrms.roles AS r ON 
-              r.id = ed.designationId 
-              AND r.department_id = dept.id 
-              AND r.is_active = 1
-          LEFT JOIN hrms.branches AS br 
-              ON br.id = ed.branchId AND br.is_active = 1
-          LEFT JOIN att.personnel_employee AS b 
-              ON e.attendance_id = b.emp_code
+          FROM hrms.employees e
+          LEFT JOIN hrms.employee_details ed ON ed.employee_id = e.id
+          LEFT JOIN hrms.departments dept ON dept.id = ed.departmentId AND dept.is_active = 1
+          LEFT JOIN hrms.roles r ON r.id = ed.designationId AND r.department_id = dept.id AND r.is_active = 1
+          LEFT JOIN hrms.branches br ON br.id = ed.branchId AND br.is_active = 1
+          LEFT JOIN att.personnel_employee b ON e.attendance_id = b.emp_code
       ),
 
       tx AS (
@@ -361,9 +602,33 @@ export const getMonthlyAttendance = async (req, res) => {
               MIN(punch_time) AS punch_time,
               GROUP_CONCAT(DISTINCT punch_state ORDER BY punch_time SEPARATOR ',') AS punch_states
           FROM att.iclock_transaction
-          WHERE YEAR(punch_time) = @year
-            AND MONTH(punch_time) = @month
+          WHERE YEAR(punch_time) = @year AND MONTH(punch_time) = @month
           GROUP BY emp_code, DATE(punch_time)
+      ),
+
+      lv AS (
+          SELECT 
+              emp_id,
+              DATE(from_date) AS from_date,
+              DATE(to_date) AS to_date,
+              TIMESTAMPDIFF(MINUTE, 
+                  TIMESTAMP(from_date, from_time),
+                  TIMESTAMP(to_date, to_time)
+              ) AS total_min
+          FROM hrms.leaves
+          WHERE YEAR(from_date) = @year AND MONTH(from_date) = @month
+      ),
+
+      ot AS (
+          SELECT emp_id, date, ot_hours
+          FROM hrms.overtime
+          WHERE YEAR(date) = @year AND MONTH(date) = @month
+      ),
+
+      od AS (
+          SELECT emp_id, date, total_hours
+          FROM hrms.addondutty
+          WHERE YEAR(date) = @year AND MONTH(date) = @month
       )
 
       SELECT 
@@ -372,174 +637,116 @@ export const getMonthlyAttendance = async (req, res) => {
           h.department_name,
           h.designation_name,
           h.branch_name,
-          d.date_val AS punch_date,
+
+          d.date_val,
+
+          -- Attendance
+          CASE WHEN tx.punch_time IS NOT NULL THEN 'PRESENT' ELSE 'ABSENT' END AS status,
           tx.punch_time,
+          tx.punch_states,
+
+          -- Late min
           CASE 
-              WHEN tx.punch_time IS NOT NULL THEN 'P'
-              ELSE 'A'
-          END AS status,
-          tx.punch_states AS punch_state
-      FROM hrms_employees AS h
-      CROSS JOIN month_dates AS d
-      LEFT JOIN tx
-          ON tx.emp_code = h.att_emp_code
-          AND tx.punch_date = d.date_val
+              WHEN tx.punch_time IS NOT NULL AND TIME(tx.punch_time) > '09:15:00'
+              THEN TIMESTAMPDIFF(MINUTE, '09:15:00', TIME(tx.punch_time))
+              ELSE 0
+          END AS late_minutes,
+
+          -- Leave
+          lv.total_min AS leave_min,
+
+          -- OverTime
+          ot.ot_hours,
+
+          -- OD Hours
+          od.total_hours AS od_hours
+
+      FROM hrms_employees h
+      CROSS JOIN month_dates d
+      LEFT JOIN tx 
+          ON tx.emp_code = h.att_emp_code AND tx.punch_date = d.date_val
+      LEFT JOIN lv 
+          ON lv.emp_id = h.emp_id AND d.date_val BETWEEN lv.from_date AND lv.to_date
+      LEFT JOIN ot 
+          ON ot.emp_id = h.emp_id AND ot.date = d.date_val
+      LEFT JOIN od 
+          ON od.emp_id = h.emp_id AND od.date = d.date_val
       ORDER BY h.emp_id, d.date_val;
     `;
 
-    // 3️⃣ EXECUTE QUERY
     const rows = await sequelize.query(sqlQuery, {
-      type: sequelize.QueryTypes.SELECT
+      type: sequelize.QueryTypes.SELECT,
     });
 
-// //     // // 4️⃣ GROUP BY EMPLOYEE
-// //     // const grouped = {};
+    // -------------------------
+    // GROUPING EMPLOYEE → DAYS
+    // -------------------------
+    const grouped = {};
 
-// //     // for (const row of rows) {
-// //     //   const empKey = row.emp_id;
+    for (const row of rows) {
+      const empKey = row.emp_id;
 
-// //     //   if (!grouped[empKey]) {
-// //     //     grouped[empKey] = {
-// //     //       emp_id: row.emp_id,
-// //     //       first_name: row.first_name,
-// //     //       department_name: row.department_name,
-// //     //       designation_name: row.designation_name,
-// //     //       branch_name: row.branch_name,
-// //     //       attendance: []
-// //     //     };
-// //     //   }
+      if (!grouped[empKey]) {
+        grouped[empKey] = {
+          emp_id: row.emp_id,
+          first_name: row.first_name,
+          department_name: row.department_name,
+          designation_name: row.designation_name,
+          branch_name: row.branch_name,
 
-// //     //   grouped[empKey].attendance.push({
-// //     //     punch_date: row.punch_date,
-// //     //     punch_time: row.punch_time,
-// //     //     status: row.status,
-// //     //     punch_state: row.punch_state
-// //     //   });
-// //     // }
+          attendance: {},
 
-// //     // 4️⃣ GROUP BY EMPLOYEE WITH DATE → STATUS FORMAT
-// // const grouped = {};
+          present: 0,
+          absent: 0,
+          leave: 0,
+          late_min: 0,
+          overtime: 0,
+          od: 0
+        };
+      }
 
-// // for (const row of rows) {
-// //   const empKey = row.emp_id;
+      const dateStr = String(row.date_val);
+      const day = dateStr.split("-")[2]; // "01", "02", ...
 
-// //   if (!grouped[empKey]) {
-// //     grouped[empKey] = {
-// //       emp_id: row.emp_id,
-// //       first_name: row.first_name,
-// //       department_name: row.department_name,
-// //       designation_name: row.designation_name,
-// //       branch_name: row.branch_name,
-// //       attendance: {}   // ← CHANGE HERE
-// //     };
-// //   }
+      // Attendance
+      grouped[empKey].attendance[day] = row.status;
+      if (row.status === "P") grouped[empKey].present++;
+      if (row.status === "ABSENT") grouped[empKey].absent++;
 
-// //   // Convert date to string YYYY-MM-DD
-// //   const dateKey = row.punch_date.toISOString().split("T")[0];
+      // Late minutes
+      grouped[empKey].late_min += row.late_minutes || 0;
 
-// //   // Store only status ("PRESENT"/"ABSENT")
-// //   grouped[empKey].attendance[dateKey] = row.status; 
-// // }
+      // Leave minutes → sum minutes
+      if (row.leave_min) grouped[empKey].leave += row.leave_min;
 
-// // res.json({
-// //   success: true,
-// //   year,
-// //   month,
-// //   data: Object.values(grouped),
-// // });
+      // Overtime
+      grouped[empKey].overtime += Number(row.ot_hours || 0);
 
-//    // 4️⃣ GROUP BY EMPLOYEE → DATE → STATUS
-// const grouped = {};
+      // OD hours
+      grouped[empKey].od += Number(row.od_hours || 0);
+    }
 
-// for (const row of rows) {
-//   const empKey = row.emp_id;
+    // Convert leave minutes → “X days Y hours”
+    for (const emp of Object.values(grouped)) {
+      const min = emp.leave;
+      const days = Math.floor(min / 1440);
+      const hours = Math.floor((min % 1440) / 60);
+      emp.leave = `${days} days ${hours} hours`;
+    }
 
-//   if (!grouped[empKey]) {
-//     grouped[empKey] = {
-//       emp_id: row.emp_id,
-//       first_name: row.first_name,
-//       department_name: row.department_name,
-//       designation_name: row.designation_name,
-//       branch_name: row.branch_name,
-//       attendance: {},     // Store date → status
-//       present: 0,
-//       absent: 0,
-//       leave: 0,
-//       late_min: 0,
-//       overtime: 0
-//     };
-//   }
+    return res.json({
+      success: true,
+      year,
+      month,
+      data: Object.values(grouped),
+    });
 
-//   // Format: YYYY-MM-DD → DD
-//   const dateStr = row.punch_date.toISOString().split("T")[0];
-//   const day = dateStr.split("-")[2];  // "01", "02", ...
-
-//   const status = row.status;
-
-//   grouped[empKey].attendance[day] = status;
-
-//   // Auto counting
-//   if (status === "PRESENT") grouped[empKey].present++;
-//   if (status === "ABSENT") grouped[empKey].absent++;
-// }
-
-// // Convert to array
-// res.json({
-//   success: true,
-//   year,
-//   month,
-//   data: Object.values(grouped),
-// });
-
-
-// 4️⃣ GROUP BY EMPLOYEE → DATE → STATUS
-const grouped = {};
-
-for (const row of rows) {
-  const empKey = row.emp_id;
-
-  if (!grouped[empKey]) {
-    grouped[empKey] = {
-      emp_id: row.emp_id,
-      first_name: row.first_name,
-      department_name: row.department_name,
-      designation_name: row.designation_name,
-      branch_name: row.branch_name,
-      attendance: {},
-      present: 0,
-      absent: 0,
-      leave: 0,
-      late_min: 0,
-      overtime: 0
-    };
-  }
-
-  // Convert DATE to string safely
-  const dateStr = String(row.punch_date);
-  const day = dateStr.split("-")[2]; // "01", "02", ...
-
-  const status = row.status;
-
-  grouped[empKey].attendance[day] = status;
-
-  if (status === "P") grouped[empKey].present++;
-  if (status === "A") grouped[empKey].absent++;
-}
-
-res.json({
-  success: true,
-  year,
-  month,
-  data: Object.values(grouped),
-});
-
-
-  } catch (error) {
-    console.error("Error fetching monthly attendance:", error);
+  } catch (err) {
+    console.error("Error:", err);
     res.status(500).json({
       success: false,
       message: "Server error",
-      error: error.message,
+      error: err.message,
     });
   }
 };

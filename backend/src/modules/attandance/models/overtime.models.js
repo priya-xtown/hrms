@@ -1,7 +1,6 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../../../db/index.js";
-import Employee from "../../employee/models/employee.model.js"
-import Attendance from "../models/attandance.models.js" // ✅ Missing import added
+
 
 const Overtime = sequelize.define(
   "Overtime",

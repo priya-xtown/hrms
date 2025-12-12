@@ -23,11 +23,6 @@ const Addondutty = sequelize.define(
       onDelete: "CASCADE",
     },
 
-    attendance_id: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-
     date: {
       type: DataTypes.DATEONLY,
       allowNull: false,
