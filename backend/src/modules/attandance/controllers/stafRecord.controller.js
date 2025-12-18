@@ -641,7 +641,7 @@ export const getMonthlyAttendance = async (req, res) => {
           d.date_val,
 
           -- Attendance
-          CASE WHEN tx.punch_time IS NOT NULL THEN 'PRESENT' ELSE 'ABSENT' END AS status,
+          CASE WHEN tx.punch_time IS NOT NULL THEN 'P' ELSE 'A' END AS status,
           tx.punch_time,
           tx.punch_states,
 
@@ -706,12 +706,12 @@ export const getMonthlyAttendance = async (req, res) => {
       }
 
       const dateStr = String(row.date_val);
-      const day = dateStr.split("-")[2]; // "01", "02", ...
+      const day = dateStr.split("-")[2];
 
       // Attendance
       grouped[empKey].attendance[day] = row.status;
       if (row.status === "P") grouped[empKey].present++;
-      if (row.status === "ABSENT") grouped[empKey].absent++;
+      if (row.status === "A") grouped[empKey].absent++;
 
       // Late minutes
       grouped[empKey].late_min += row.late_minutes || 0;
